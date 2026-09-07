@@ -1,5 +1,9 @@
 # 03 · Plan phát triển web app "Một Việc"
 
+> **Trạng thái (2026-09-07):** M0–M4 đã code xong trong một phiên, 47 test pass, e2e walkthrough pass.
+> Việc còn lại của MVP là **dùng thật 4 tuần** và đo (mục "Cột mốc đánh giá"), không phải thêm tính năng.
+> Khác biệt so với plan gốc: xem mục 8.
+
 > Plan này tự áp dụng chính các rule của app: mỗi milestone là **1 việc chính**, có **Definition of Done** kiểm được,
 > ước lượng nhỏ, và có **Next Action** cho buổi làm việc đầu tiên. Không mở milestone mới khi milestone cũ chưa đóng.
 
@@ -134,3 +138,23 @@ Push notification giờ Shutdown · AI concretizer · Sync Supabase · Body-doub
 1. Giờ Shutdown và giờ ngủ mục tiêu mặc định (plan tạm: 21:00 / 23:00).
 2. Ngôn ngữ UI: tiếng Việt hay Anh (plan tạm: Việt, vì viết hậu quả bằng tiếng mẹ đẻ chạm hơn).
 3. Có muốn dùng trên điện thoại từ ngày 1 không (nếu có, M0 ưu tiên PWA + Pages; nếu không, bỏ PWA khỏi M0).
+
+## 8. Đã làm khác plan gốc ở đâu (sau khi code)
+
+| Plan | Thực tế | Lý do |
+|---|---|---|
+| M1 "form 1 dòng tạm" | Form đầy đủ ngay từ đầu | Viết một lần cho xong, tránh code vứt đi. |
+| M3 "sáng không cho sửa Next Action" | Đúng như plan, thêm: sáng **không có nav "Tuần"** khi đang Night mode | Night mode ẩn toàn bộ nav. |
+| Parking Lot "lên mai" | Thành **việc nhỏ hôm nay**, chỉ mở khoá sau ≥10' việc chính hoặc khi việc chính đã đóng | Việc nhỏ có thật, nhưng không được là cớ để trốn việc chính. |
+| Không có trong plan | `?d=&t=` giả lập thời gian | Cần để test/demo cả vòng đời trong vài phút. |
+| Không có trong plan | Onboarding 3 mốc giờ | Settings phải có trước khi state machine chạy. |
+| M5 push notification | Chưa làm | Đúng plan: chỉ sau khi MVP chứng minh có dùng. |
+
+## 9. Việc bạn cần làm để bắt đầu dùng (10 phút)
+
+1. Merge branch vào `main`, bật **Settings → Pages → Source: GitHub Actions**, chờ deploy.
+2. Mở URL trên điện thoại → Thêm vào màn hình chính.
+3. Onboarding: chọn giờ đóng ngày (khuyên: cách giờ ngủ ≥ 2 tiếng) và giờ ngủ mục tiêu.
+4. Tab **Tuần**: nhập 1–2 mục tiêu tuần này.
+5. Tab **Hôm nay**: tạo việc chính hôm nay. Bấm Bắt đầu 10 phút.
+6. Tối nay đúng giờ: Đóng ngày. Xong.
