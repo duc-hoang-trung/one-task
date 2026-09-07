@@ -1,0 +1,22 @@
+.icon,
+.fallback {
+  display: inline-flex;
+  flex: none;
+  border-radius: var(--r-pill);
+}
+
+.icon {
+  background-color: var(--inset);
+  object-fit: contain;
+}
+
+.fallback {
+  align-items: center;
+  justify-content: center;
+  background-color: var(--line);
+  color: var(--dust);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}

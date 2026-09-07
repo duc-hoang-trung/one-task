@@ -1,0 +1,82 @@
+.page {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  min-height: 100vh;
+  padding: clamp(32px, 10vh, 92px) 20px 56px;
+}
+
+.column {
+  width: 100%;
+  max-width: 452px;
+}
+
+.placeholder,
+.problem {
+  display: grid;
+  gap: 12px;
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  background-color: var(--panel);
+}
+
+.bar {
+  height: 62px;
+  border-radius: var(--r-field);
+  background: linear-gradient(
+    100deg,
+    var(--inset) 30%,
+    #26232f 50%,
+    var(--inset) 70%
+  );
+  background-size: 300% 100%;
+  animation: sweep 1.3s ease-in-out infinite;
+}
+
+.bar:last-of-type {
+  height: 44px;
+}
+
+@keyframes sweep {
+  from {
+    background-position: 140% 0;
+  }
+  to {
+    background-position: -40% 0;
+  }
+}
+
+.placeholderNote {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--dim);
+  text-align: center;
+}
+
+.problemTitle {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.problemBody {
+  margin: -6px 0 0;
+  font-size: 13px;
+  color: var(--dust);
+}
+
+.retry {
+  justify-self: start;
+  padding: 9px 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-ctl);
+  font-size: 13px;
+  font-weight: 500;
+  transition: background-color var(--dur) var(--ease);
+}
+
+.retry:hover {
+  background-color: var(--inset);
+}

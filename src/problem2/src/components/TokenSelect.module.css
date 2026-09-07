@@ -1,0 +1,136 @@
+.dialog {
+  width: min(420px, calc(100vw - 32px));
+  max-height: min(560px, calc(100vh - 64px));
+  padding: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-card);
+  background-color: var(--panel);
+  color: var(--sand);
+  overflow: hidden;
+  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.6);
+}
+
+.dialog::backdrop {
+  background-color: rgba(6, 5, 10, 0.72);
+  backdrop-filter: blur(3px);
+}
+
+.dialog[open] {
+  display: flex;
+  flex-direction: column;
+  animation: slide-in var(--dur) var(--ease);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px 14px;
+}
+
+.title {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 500;
+  font-family: var(--font-mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--dust);
+}
+
+.dismiss {
+  padding: 4px 9px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-ctl);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--dim);
+  transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+
+.dismiss:hover {
+  color: var(--sand);
+  border-color: var(--line-strong);
+}
+
+.search {
+  padding: 0 20px 14px;
+}
+
+.input {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-ctl);
+  background-color: var(--inset);
+  font-size: 14px;
+  transition: border-color var(--dur) var(--ease);
+}
+
+.input::placeholder {
+  color: var(--dim);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--peri-deep);
+}
+
+.list {
+  flex: 1;
+  min-height: 0;
+  padding: 0 12px 12px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: var(--r-ctl);
+  text-align: left;
+  transition: background-color 120ms var(--ease);
+}
+
+.row[data-active='true'] {
+  background-color: var(--inset);
+}
+
+.row[data-selected='true'] .symbol {
+  color: var(--peri);
+}
+
+.symbol {
+  flex: 1;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.figures {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.balance {
+  font-size: 13px;
+}
+
+.price {
+  font-size: 11px;
+  color: var(--dim);
+}
+
+.empty {
+  margin: 24px 12px;
+  font-size: 13px;
+  color: var(--dust);
+  text-align: center;
+}
