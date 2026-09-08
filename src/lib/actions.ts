@@ -1,7 +1,8 @@
 import { now } from './clock'
 import { backlogTasks, db, getOrCreateDayLog, isOpen, patch, put, softDelete, tasksFor, uid } from './db'
 import { addDays, toHM, toISODate, type HM, type ISODate } from './dates'
-import type { Area, CheckinState, DeferralReason, DodItem, Goal, Horizon, ParkingResolution, Quadrant, Task } from './types'
+import { isFocus, isRunning, type Reconcile } from './session'
+import type { Area, CheckinState, DeferralReason, DodItem, Goal, Horizon, ParkingResolution, Quadrant, Session, Task } from './types'
 
 // ---- Tasks -------------------------------------------------------------------
 
@@ -155,11 +156,16 @@ export async function activeSession() {
   return open.sort((a, b) => b.startedAt - a.startedAt)[0]
 }
 
+/** Đóng một phiên đang mở: nếu đang tạm dừng thì kết thúc tại lúc tạm dừng (thời gian ẩn không tính). */
+async function closeOpenSession(s: Session, nowMs: number) {
+  await patch('sessions', s.id, { endedAt: s.pausedAt ?? nowMs, pausedAt: undefined })
+}
+
 export async function startSession(taskId: string, date: ISODate, plannedMin: number, nowMs = now().getTime()) {
   const open = await activeSession()
-  if (open) await patch('sessions', open.id, { endedAt: nowMs })
+  if (open) await closeOpenSession(open, nowMs)
   const id = uid()
-  await put('sessions', { id, taskId, date, startedAt: nowMs, plannedMin, kind: 'focus' })
+  await put('sessions', { id, taskId, date, startedAt: nowMs, plannedMin, kind: 'focus', pausedMs: 0 })
   await patch('tasks', taskId, { status: 'active' })
   return id
 }
@@ -167,7 +173,7 @@ export async function startSession(taskId: string, date: ISODate, plannedMin: nu
 /** Nghỉ ngắn: kết thúc phiên đang chạy, mở phiên break. Không tính vào phút tập trung. */
 export async function startBreak(date: ISODate, plannedMin: number, nowMs = now().getTime()) {
   const open = await activeSession()
-  if (open) await patch('sessions', open.id, { endedAt: nowMs })
+  if (open) await closeOpenSession(open, nowMs)
   const id = uid()
   await put('sessions', { id, taskId: '', date, startedAt: nowMs, plannedMin, kind: 'break' })
   return id
@@ -180,13 +186,45 @@ export async function extendSession(sessionId: string, byMin: number) {
 }
 
 export async function endSession(sessionId: string, nowMs = now().getTime()) {
-  await patch('sessions', sessionId, { endedAt: nowMs })
+  const s = await db.sessions.get(sessionId)
+  if (!s || s.endedAt !== undefined) return
+  await closeOpenSession(s, nowMs)
 }
 
-/** Phiên quên tắt từ ngày khác → kết thúc tại startedAt + plannedMin. */
+/** Tạm dừng (chỉ phiên focus đang chạy). */
+export async function pauseSession(sessionId: string, atMs = now().getTime()) {
+  const s = await db.sessions.get(sessionId)
+  if (!s || !isRunning(s) || !isFocus(s)) return
+  await patch('sessions', sessionId, { pausedAt: Math.max(s.startedAt, atMs) })
+}
+
+/** Tiếp tục: cộng khoảng dừng vào pausedMs. `from` cho phép trừ khoảng ẩn khi phiên chưa kịp ghi pausedAt. */
+export async function resumeSession(sessionId: string, nowMs = now().getTime(), from?: number) {
+  const s = await db.sessions.get(sessionId)
+  if (!s || s.endedAt !== undefined) return
+  const start = s.pausedAt ?? from
+  if (start === undefined) return
+  await patch('sessions', sessionId, { pausedAt: undefined, pausedMs: (s.pausedMs ?? 0) + Math.max(0, nowMs - start) })
+}
+
+/** Áp kết quả decideReconcile lên phiên. */
+export async function reconcileSession(sessionId: string, r: Reconcile, nowMs = now().getTime()) {
+  if (r.kind === 'resume') await resumeSession(sessionId, nowMs, r.from)
+  else if (r.kind === 'pause') await pauseSession(sessionId, r.at)
+}
+
+/**
+ * Phiên từ ngày khác còn mở: đang tạm dừng → kết thúc tại lúc dừng;
+ * đang chạy (quên tắt) → kết thúc tại startedAt + pausedMs + plannedMin.
+ */
 export async function closeStaleSessions(today: ISODate) {
   const open = await db.sessions.filter((s) => s.endedAt === undefined && s.date !== today).toArray()
-  for (const s of open) await patch('sessions', s.id, { endedAt: s.startedAt + s.plannedMin * 60_000 })
+  for (const s of open) {
+    await patch('sessions', s.id, {
+      endedAt: s.pausedAt ?? s.startedAt + (s.pausedMs ?? 0) + s.plannedMin * 60_000,
+      pausedAt: undefined,
+    })
+  }
 }
 
 // ---- Parking lot (inbox ghi nhanh) ------------------------------------------
@@ -240,12 +278,12 @@ export async function closeDay(args: {
   worry?: { concern: string; nextStep: string }
   now?: Date
 }) {
-  const now = args.now ?? new Date()
+  const at = args.now ?? now()
   const open = await activeSession()
-  if (open) await patch('sessions', open.id, { endedAt: now.getTime() })
+  if (open) await closeOpenSession(open, at.getTime())
   await getOrCreateDayLog(args.today)
   await patch('dayLogs', args.today, {
-    shutdownAt: toHM(now),
+    shutdownAt: toHM(at),
     locked: true,
     mainTaskOutcome: args.outcome,
     worry: args.worry && (args.worry.concern || args.worry.nextStep) ? args.worry : undefined,

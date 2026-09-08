@@ -30,11 +30,11 @@ export function defaultFocusMin(task: Pick<Task, 'estimateMin'> | undefined, set
 }
 
 /** Bắt đầu phiên với thời lượng đã chọn, ghi nhớ lựa chọn, xin quyền thông báo nếu bật. */
-export async function beginFocus(task: Task, today: ISODate, minutes: number, settings: Settings, nowMs: number) {
+export async function beginFocus(task: Task, today: ISODate, minutes: number, settings: Settings) {
   const n = Math.min(MAX_MIN, Math.max(1, Math.round(minutes) || settings.minFocusMin))
   try { localStorage.setItem(LAST_KEY, String(n)) } catch { /* ignore */ }
   if (settings.notifications.system) void requestNotifyPermission()
-  await startSession(task.id, today, n, nowMs)
+  await startSession(task.id, today, n)
 }
 
 /**
@@ -82,13 +82,13 @@ export function DurationChips({ value, onChange, settings, estimate, className =
 }
 
 /** Hộp chọn thời lượng rồi bắt đầu cho một việc bất kỳ (nút ▶ ở dòng việc). */
-export function StartFocusModal({ task, today, settings, nowMs, onClose }: {
-  task: Task; today: ISODate; settings: Settings; nowMs: number; onClose: () => void
+export function StartFocusModal({ task, today, settings, onClose }: {
+  task: Task; today: ISODate; settings: Settings; onClose: () => void
 }) {
   const { t } = useT()
   const [min, setMin] = useState(() => defaultFocusMin(task, settings))
   async function go() {
-    await beginFocus(task, today, min, settings, nowMs)
+    await beginFocus(task, today, min, settings)
     onClose()
   }
   return (

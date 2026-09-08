@@ -82,6 +82,10 @@ export interface Session extends Synced {
   plannedMin: number
   /** undefined = focus (bản ghi cũ) */
   kind?: SessionKind
+  /** Đang tạm dừng từ lúc này (ms). undefined = đang chạy hoặc đã kết thúc. */
+  pausedAt?: number
+  /** Tổng ms đã tạm dừng, không tính vào phút tập trung. */
+  pausedMs?: number
 }
 
 export type ParkingResolution = 'drop' | 'later' | 'tomorrow'

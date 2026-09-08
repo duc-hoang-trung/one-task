@@ -1,15 +1,14 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useEffect, useState } from 'react'
 import { CalendarDays, LayoutGrid, Moon, Settings as SettingsIcon, Sun, Target } from 'lucide-react'
-import { useNow } from './hooks'
+import { useNow, useSessionGuard } from './hooks'
 import { LangContext, resolveLang, useT } from './i18n'
-import { activeSession, closeStaleSessions } from './lib/actions'
+import { activeSession } from './lib/actions'
 import { isClockOverridden } from './lib/clock'
 import { db, mainTaskFor } from './lib/db'
 import { logicalDate, toHM } from './lib/dates'
 import { alertUser, once } from './lib/notify'
-import { computePhase, isShutdownDue } from './lib/phase'
-import { toHM as hm } from './lib/dates'
+import { computePhase, isWithinAfter } from './lib/phase'
 import { tasksFor } from './lib/db'
 import { DEFAULT_SETTINGS, type Settings } from './lib/types'
 import { CalendarScreen } from './screens/CalendarScreen'
@@ -48,20 +47,18 @@ function Shell({ settings }: { settings: Settings }) {
   const task = useLiveQuery(() => mainTaskFor(today), [today])
   const session = useLiveQuery(() => activeSession(), [today])
 
-  useEffect(() => {
-    void closeStaleSessions(today)
-  }, [today])
+  useSessionGuard(today)
 
   // Nhắc: đến giờ đóng ngày (một lần/ngày) và đến giờ bắt đầu một việc (một lần/việc).
   const todayTasks = useLiveQuery(() => tasksFor(today), [today], [])
   useEffect(() => {
     if (!settings.onboarded || todayLog?.locked) return
-    if (isShutdownDue(now, settings.shutdownTime) && hm(now) === settings.shutdownTime) {
+    // Đồng hồ tick 30s nên so bằng phút có thể lọt: dùng cửa sổ 5 phút sau mốc, `once` chống lặp.
+    if (isWithinAfter(now, settings.shutdownTime)) {
       once(`shutdown:${today}`, () => alertUser(settings.notifications, t('notif.shutdown'), t('notif.shutdown.body'), 'gentle', 'shutdown'))
     }
-    const cur = hm(now)
     for (const x of todayTasks) {
-      if (x.startAt === cur && (x.status === 'planned' || x.status === 'active')) {
+      if (x.startAt && isWithinAfter(now, x.startAt) && (x.status === 'planned' || x.status === 'active')) {
         once(`start:${x.id}:${today}`, () => alertUser(settings.notifications, t('notif.startAt', { title: x.title }), x.nextAction || undefined, 'gentle', `start-${x.id}`))
       }
     }

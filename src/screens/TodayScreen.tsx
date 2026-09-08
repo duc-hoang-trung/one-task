@@ -85,7 +85,7 @@ export function TodayScreen({
             <Card>
               <Eyebrow>{t('today.focusing', { title: focusingTask?.title ?? '' })}</Eyebrow>
               <div className="mt-3">
-                <FocusTimer session={session} nowMs={nowMs} settings={settings} streakMin={streak} today={today} taskId={session.taskId || focusingTask?.id || ''} />
+                <FocusTimer session={session} settings={settings} streakMin={streak} today={today} taskId={session.taskId || focusingTask?.id || ''} />
               </div>
             </Card>
           )}
@@ -99,10 +99,10 @@ export function TodayScreen({
 
               <div className="my-6">
                 {session && timerOnMit ? (
-                  <FocusTimer session={session} nowMs={nowMs} settings={settings} streakMin={streak} today={today} taskId={mit.id} />
+                  <FocusTimer session={session} settings={settings} streakMin={streak} today={today} taskId={mit.id} />
                 ) : !session ? (
                   <div className="flex flex-col gap-3">
-                    <Button size="lg" onClick={() => void beginFocus(mit, today, mitMin, settings, nowMs)}>
+                    <Button size="lg" onClick={() => void beginFocus(mit, today, mitMin, settings)}>
                       <Play size={18} />
                       {(minutesByTask.get(mit.id) ?? 0) > 0 ? t('today.continue', { n: mitMin }) : t('today.start', { n: mitMin })}
                     </Button>
@@ -197,12 +197,12 @@ export function TodayScreen({
       </Columns>
 
       {editing && <TaskSheet task={editing} today={today} onClose={() => setEditing(null)} />}
-      {starting && <StartFocusModal task={starting} today={today} settings={settings} nowMs={nowMs} onClose={() => setStarting(null)} />}
+      {starting && <StartFocusModal task={starting} today={today} settings={settings} onClose={() => setStarting(null)} />}
       {cancelling && mit && (
         <CancelFlow
           task={mit} today={today} minFocusMin={settings.minFocusMin}
           onClose={() => setCancelling(false)}
-          onStartAnyway={() => { setCancelling(false); void beginFocus(mit, today, settings.minFocusMin, settings, nowMs) }}
+          onStartAnyway={() => { setCancelling(false); void beginFocus(mit, today, settings.minFocusMin, settings) }}
           onResolved={() => setCancelling(false)}
         />
       )}

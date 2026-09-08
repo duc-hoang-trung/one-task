@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { db } from './db'
 import {
-  addGoal, closeDay, closeStaleSessions, createTask, deferTask, endSession, extendSession, openMorning,
+  addGoal, closeDay, closeStaleSessions, createTask, deferTask, endSession, extendSession, openMorning, pauseSession, resumeSession, reconcileSession,
   resolveParking, addParking, startSession, activeSession, startBreak, setMain, scheduleTask, promoteToTask, carryOver, checkinGoal, goalsFor, reorderTasks, completeTask,
 } from './actions'
 
@@ -65,6 +65,69 @@ describe('sessions', () => {
     const id = await startSession(t.id, '2026-09-07', 10, 0)
     await closeStaleSessions('2026-09-08')
     expect((await db.sessions.get(id))!.endedAt).toBe(10 * 60_000)
+  })
+  it('phiên từ hôm khác đang tạm dừng → kết thúc tại lúc dừng; đang chạy có pausedMs → cộng thêm', async () => {
+    const t = await createTask(base)
+    const a = await startSession(t.id, '2026-09-07', 10, 0)
+    await pauseSession(a, 4 * 60_000)
+    await closeStaleSessions('2026-09-08')
+    expect((await db.sessions.get(a))!.endedAt).toBe(4 * 60_000)
+    expect((await db.sessions.get(a))!.pausedAt).toBeUndefined()
+    const b = await startSession(t.id, '2026-09-07', 10, 0)
+    await pauseSession(b, 60_000)
+    await resumeSession(b, 3 * 60_000)
+    await closeStaleSessions('2026-09-08')
+    expect((await db.sessions.get(b))!.endedAt).toBe(2 * 60_000 + 10 * 60_000)
+  })
+})
+
+describe('pause / resume', () => {
+  it('pause rồi resume cộng dồn pausedMs, xoá pausedAt; pause lặp là no-op', async () => {
+    const t = await createTask(base)
+    const id = await startSession(t.id, '2026-09-08', 10, 0)
+    await pauseSession(id, 60_000)
+    await pauseSession(id, 90_000)
+    expect((await db.sessions.get(id))!.pausedAt).toBe(60_000)
+    await resumeSession(id, 120_000)
+    let s = (await db.sessions.get(id))!
+    expect(s.pausedAt).toBeUndefined()
+    expect(s.pausedMs).toBe(60_000)
+    await pauseSession(id, 200_000)
+    await resumeSession(id, 230_000)
+    s = (await db.sessions.get(id))!
+    expect(s.pausedMs).toBe(90_000)
+  })
+  it('resume với from khi phiên chưa kịp pause (ẩn app thoáng qua) trừ đúng khoảng ẩn', async () => {
+    const t = await createTask(base)
+    const id = await startSession(t.id, '2026-09-08', 10, 0)
+    await reconcileSession(id, { kind: 'resume', from: 50_000 }, 80_000)
+    expect((await db.sessions.get(id))!.pausedMs).toBe(30_000)
+    await reconcileSession(id, { kind: 'pause', at: 100_000 }, 500_000)
+    expect((await db.sessions.get(id))!.pausedAt).toBe(100_000)
+  })
+  it('endSession / startSession / startBreak / closeDay trên phiên đang dừng → endedAt = pausedAt', async () => {
+    const t = await createTask(base)
+    const a = await startSession(t.id, '2026-09-08', 10, 0)
+    await pauseSession(a, 60_000)
+    await endSession(a, 999_000)
+    expect((await db.sessions.get(a))!.endedAt).toBe(60_000)
+    const b = await startSession(t.id, '2026-09-08', 10, 0)
+    await pauseSession(b, 70_000)
+    await startSession(t.id, '2026-09-08', 10, 999_000)
+    expect((await db.sessions.get(b))!.endedAt).toBe(70_000)
+    const c = await startSession(t.id, '2026-09-08', 10, 0)
+    await pauseSession(c, 80_000)
+    await startBreak('2026-09-08', 5, 999_000)
+    expect((await db.sessions.get(c))!.endedAt).toBe(80_000)
+    const d = await startSession(t.id, '2026-09-08', 10, 0)
+    await pauseSession(d, 90_000)
+    await closeDay({ today: '2026-09-08', outcome: 'progress', now: new Date(2026, 8, 8, 21, 0) })
+    expect((await db.sessions.get(d))!.endedAt).toBe(90_000)
+  })
+  it('break không tạm dừng được', async () => {
+    const b = await startBreak('2026-09-08', 5, 0)
+    await pauseSession(b, 60_000)
+    expect((await db.sessions.get(b))!.pausedAt).toBeUndefined()
   })
 })
 

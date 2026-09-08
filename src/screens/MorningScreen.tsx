@@ -42,7 +42,7 @@ export function MorningScreen({ today, task: mit, settings, now }: { today: ISOD
   async function start(minutes = min) {
     if (!mit) return
     await openMorning(today, bedtime, now)
-    await beginFocus(mit, today, minutes, settings, now.getTime())
+    await beginFocus(mit, today, minutes, settings)
   }
 
   return (

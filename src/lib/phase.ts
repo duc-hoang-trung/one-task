@@ -29,3 +29,12 @@ export function isShutdownOnTime(shutdownAt: HM, shutdownTime: HM, graceMin = 30
   const delta = parseHM(shutdownAt) - parseHM(shutdownTime)
   return delta <= graceMin
 }
+
+/**
+ * now nằm trong [hm, hm + windowMin) phút? Dùng cho nhắc nhở với đồng hồ tick thưa (30s):
+ * so bằng có thể lọt; so >= sẽ kêu cả khi mở app lúc 22:30.
+ */
+export function isWithinAfter(now: Date, hm: HM, windowMin = 5): boolean {
+  const delta = minutesOfDay(now) - parseHM(hm)
+  return delta >= 0 && delta < windowMin
+}

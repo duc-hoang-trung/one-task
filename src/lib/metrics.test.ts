@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { computeWeekMetrics, focusStreakMin, sessionMinutes } from './metrics'
+import { computeWeekMetrics, focusStreakMin, FORGOT_GRACE_MIN, sessionMinutes } from './metrics'
 import type { DayLog, Session, Task } from './types'
 
 const settings = { minFocusMin: 10, shutdownTime: '21:00', bedtimeTarget: '23:00' }
@@ -100,5 +100,18 @@ describe('sessionMinutes', () => {
     const s: Session = { id: 'x', taskId: 't', date: '2026-09-08', startedAt: ms('2026-09-08', 8), plannedMin: 10, kind: 'focus' }
     expect(sessionMinutes(s, ms('2026-09-08', 21))).toBe(40)
     expect(sessionMinutes(s, ms('2026-09-08', 8, 7))).toBe(7)
+  })
+})
+
+describe('sessionMinutes với tạm dừng', () => {
+  const base = { id: 's', taskId: 't', date: '2026-09-08', startedAt: 0, plannedMin: 25, kind: 'focus' as const }
+  it('không đếm thời gian tạm dừng', () => {
+    expect(sessionMinutes({ ...base, pausedMs: 5 * 60_000 }, 15 * 60_000)).toBe(10)
+  })
+  it('đang dừng thì đứng im bất kể now', () => {
+    expect(sessionMinutes({ ...base, pausedAt: 7 * 60_000 }, 300 * 60_000)).toBe(7)
+  })
+  it('trần plannedMin + grace vẫn áp', () => {
+    expect(sessionMinutes(base, 500 * 60_000)).toBe(25 + FORGOT_GRACE_MIN)
   })
 })

@@ -48,7 +48,7 @@ export function ShutdownScreen({
   const suggested = backlog.filter((x) => x.quadrant === 'q1' || x.quadrant === 'q2').slice(0, 5)
 
   async function finish() {
-    await closeDay({ today, outcome, worry: { concern: concern.trim(), nextStep: nextStep.trim() }, now })
+    await closeDay({ today, outcome, worry: { concern: concern.trim(), nextStep: nextStep.trim() } })
   }
 
   const Dots = () => (

@@ -1,5 +1,6 @@
 import { addDays, bedtimeDelta, weekDays, type ISODate } from './dates'
 import { isShutdownOnTime } from './phase'
+import { elapsedMs } from './session'
 import type { DayLog, DeferralReason, Session, Settings, Task } from './types'
 
 export interface WeekMetrics {
@@ -40,7 +41,7 @@ export function focusStreakMin(sessionsToday: Session[], nowMs: number): number 
 /** Phiên quên tắt không được tính vô hạn: trần = plannedMin + FORGOT_GRACE_MIN. */
 export const FORGOT_GRACE_MIN = 30
 export function sessionMinutes(s: Session, nowMs: number): number {
-  const raw = Math.max(0, Math.round(((s.endedAt ?? nowMs) - s.startedAt) / 60_000))
+  const raw = Math.round(elapsedMs(s, nowMs) / 60_000)
   return Math.min(raw, s.plannedMin + FORGOT_GRACE_MIN)
 }
 

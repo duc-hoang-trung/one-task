@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { computePhase, isShutdownDue, isShutdownOnTime } from './phase'
+import { computePhase, isWithinAfter, isShutdownDue, isShutdownOnTime } from './phase'
 
 describe('computePhase', () => {
   it('chưa có log → morning', () => {
@@ -28,5 +28,18 @@ describe('isShutdownOnTime', () => {
     expect(isShutdownOnTime('20:40', '21:00')).toBe(true)
     expect(isShutdownOnTime('21:30', '21:00')).toBe(true)
     expect(isShutdownOnTime('21:31', '21:00')).toBe(false)
+  })
+})
+
+describe('isWithinAfter', () => {
+  const d = (h: number, m: number) => new Date(2026, 8, 8, h, m)
+  it('trong [t, t+5) → true', () => {
+    expect(isWithinAfter(d(21, 0), '21:00')).toBe(true)
+    expect(isWithinAfter(d(21, 4), '21:00')).toBe(true)
+  })
+  it('ngoài cửa sổ → false', () => {
+    expect(isWithinAfter(d(21, 5), '21:00')).toBe(false)
+    expect(isWithinAfter(d(20, 59), '21:00')).toBe(false)
+    expect(isWithinAfter(d(22, 30), '21:00')).toBe(false)
   })
 })

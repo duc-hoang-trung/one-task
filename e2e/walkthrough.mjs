@@ -9,6 +9,9 @@ const dark = process.env.DARK === '1'
 const wide = process.env.WIDE === '1'   // màn rộng: sidebar + nhiều cột
 const ctx = await browser.newContext({ viewport: wide ? { width: 1440, height: 900 } : { width: 390, height: 844 }, deviceScaleFactor: wide ? 1 : 2, locale: 'vi-VN', colorScheme: dark ? 'dark' : 'light' })
 const page = await ctx.newPage()
+// Đồng hồ giả của Playwright: nhảy giờ trong ngày bằng fastForward (không reload → không kích hoạt tạm dừng khi ẩn app)
+await page.clock.install({ time: new Date(2026, 8, 8, 7, 30) })
+const jump = async (ms) => { await page.clock.fastForward(ms); await page.waitForTimeout(400) }
 const errors = []
 page.on('pageerror', (e) => errors.push(String(e)))
 page.on('console', (m) => m.type() === 'error' && !/Failed to load resource/.test(m.text()) && errors.push(m.text()))
@@ -62,8 +65,8 @@ await page.waitForTimeout(200)
 await expectText('1 ý chờ xử lý')
 await shot('06-today-timer')
 
-// 5b. 30 minutes later: planned time over and streak ≥ 25' → break suggested
-await go('2026-09-08', '08:00')
+// 5b. 30 minutes later (same tab, no reload): planned time over and streak ≥ 25' → break suggested
+await jump(30 * 60_000)
 await expectText('Nghỉ 5 phút')
 await shot('06b-break-suggested')
 await page.getByRole('button', { name: 'Nghỉ 5 phút' }).click()
@@ -72,9 +75,11 @@ await shot('06c-on-break')
 await page.getByRole('button', { name: 'Bỏ nghỉ, làm tiếp' }).click()
 await expectText('còn / 10')
 
-// 6. Jump to 21:05 (same logical day) → shutdown banner
+// 6. Reload at 21:05 (same logical day): the focus session left running was auto-paused at the moment the app was hidden
 await go('2026-09-08', '21:05')
 await expectText('Đến giờ đóng ngày')
+await expectText('Đã tạm dừng lúc')
+await shot('06d-paused-after-reload')
 // tick DoD, complete
 const boxes = page.locator('input[type=checkbox]')
 await boxes.nth(0).click(); await page.waitForTimeout(200); await boxes.nth(1).click(); await page.waitForTimeout(300)
@@ -144,6 +149,35 @@ await page.getByRole('dialog').getByRole('button', { name: 'Bắt đầu 25 phú
 await expectText('Đang tập trung: Hỏi HR về bảo hiểm')
 await expectText('còn / 25')
 await shot('11c-focus-other')
+
+// 10c. Timer ticks once per second; manual pause freezes it; continue resumes
+const timerText = () => page.getByTestId('timer').innerText()
+const t0 = await timerText(); await jump(1000); const t1 = await timerText(); await jump(1000); const t2 = await timerText()
+const toSec = (s) => { const [m, x] = s.replace('+', '').split(':').map(Number); return m * 60 + x }
+if (toSec(t0) - toSec(t1) !== 1 || toSec(t1) - toSec(t2) !== 1) throw new Error(`Timer không đếm đều: ${t0} ${t1} ${t2}`)
+await page.getByRole('button', { name: 'Tạm dừng' }).click()
+await expectText('Đã tạm dừng lúc')
+const p0 = await timerText(); await jump(5 * 60_000); const p1 = await timerText()
+if (p0 !== p1) throw new Error(`Đang tạm dừng mà số vẫn chạy: ${p0} → ${p1}`)
+await shot('11d-paused')
+await page.getByRole('button', { name: 'Tiếp tục' }).click()
+await jump(2000)
+if (toSec(await timerText()) >= toSec(p1)) throw new Error('Tiếp tục mà không đếm')
+// hidden 3 minutes → auto-paused, waiting for Continue
+const setHidden = (h) => page.evaluate((hidden) => {
+  if (hidden) Object.defineProperty(document, 'hidden', { get: () => true, configurable: true })
+  else delete document.hidden
+  document.dispatchEvent(new Event('visibilitychange'))
+}, h)
+await setHidden(true); await page.waitForTimeout(200); await jump(3 * 60_000); await setHidden(false)
+await expectText('Đã tạm dừng lúc')
+await page.getByRole('button', { name: 'Tiếp tục' }).click(); await page.waitForTimeout(300)
+// hidden 60 s → auto-continued, and the hidden minute is not counted
+const h0 = toSec(await timerText())
+await setHidden(true); await page.waitForTimeout(200); await jump(60_000); await setHidden(false); await page.waitForTimeout(600)
+const h1 = toSec(await timerText())
+if (h0 - h1 > 3) throw new Error(`Thời gian ẩn bị tính vào timer: ${h0} → ${h1}`)
+if (await page.getByText('Đã tạm dừng lúc').isVisible().catch(() => false)) throw new Error('Ẩn 60s mà không tự tiếp tục')
 await page.getByRole('button', { name: 'Dừng sớm' }).click()
 await page.waitForTimeout(200)
 // MIT card offers duration chips again; "Khác" lets you type any number
