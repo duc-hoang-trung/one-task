@@ -6,14 +6,33 @@ export interface Synced {
   deleted?: boolean
 }
 
+export type Area = 'work' | 'personal'
+/** Eisenhower: q1 khẩn+quan trọng · q2 quan trọng · q3 khẩn · q4 còn lại */
+export type Quadrant = 'q1' | 'q2' | 'q3' | 'q4'
+export const QUADRANTS: Quadrant[] = ['q1', 'q2', 'q3', 'q4']
+
 export type GoalStatus = 'open' | 'done' | 'dropped'
-export interface WeekGoal extends Synced {
+export type Horizon = 'week' | 'quarter' | 'year'
+export type CheckinState = 'on-track' | 'behind' | 'blocked'
+export interface Checkin {
+  at: number
+  state: CheckinState
+  note?: string
+}
+export interface Goal extends Synced {
   id: string
-  weekStart: ISODate
+  horizon: Horizon
+  /** '2026-W37' | '2026-Q3' | '2026' (xem lib/period.ts) */
+  periodKey: string
   title: string
+  area: Area
+  parentId?: string
   status: GoalStatus
+  checkins: Checkin[]
   createdAt: number
 }
+/** @deprecated tên cũ, giữ để đọc code cũ */
+export type WeekGoal = Goal
 
 export type TaskStatus = 'planned' | 'active' | 'done' | 'dropped'
 export type DeferralReason = 'new-info' | 'urgent' | 'dont-want'
@@ -31,11 +50,20 @@ export interface Task extends Synced {
   id: string
   goalId?: string
   title: string
+  area: Area
+  quadrant?: Quadrant
+  /** Việc quan trọng nhất của ngày (MIT). Tối đa 1 mỗi ngày, enforce trong actions.setMain. */
+  isMain?: boolean
+  /** Thứ tự trong ngày / trong ô ma trận. */
+  order: number
   dod: DodItem[]
   consequence: string
   estimateMin?: number
   nextAction: string
-  scheduledFor: ISODate
+  /** undefined = Backlog (chưa lên lịch) */
+  scheduledFor?: ISODate
+  /** Giờ dự định bắt đầu, để nhắc. */
+  startAt?: HM
   status: TaskStatus
   deferrals: Deferral[]
   createdAt: number
@@ -67,6 +95,8 @@ export interface ParkingItem extends Synced {
   /** với resolution 'tomorrow': ngày sẽ hiện lên làm việc nhỏ */
   forDate?: ISODate
   doneAt?: number
+  /** đã biến thành task */
+  promotedTaskId?: string
 }
 
 export interface DayLog extends Synced {
@@ -92,6 +122,8 @@ export interface Settings extends Synced {
   /** Sau bao nhiêu phút tập trung liền thì gợi ý nghỉ */
   pomodoroMin: number
   breakMin: number
+  defaultArea: Area
+  notifications: { sound: boolean; vibrate: boolean; system: boolean }
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -105,4 +137,6 @@ export const DEFAULT_SETTINGS: Settings = {
   lang: 'auto',
   pomodoroMin: 25,
   breakMin: 5,
+  defaultArea: 'work',
+  notifications: { sound: true, vibrate: true, system: true },
 }

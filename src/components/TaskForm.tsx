@@ -2,8 +2,9 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { useState } from 'react'
 import { useT } from '../i18n'
 import { createTask, type NewTaskInput } from '../lib/actions'
-import { db } from '../lib/db'
-import { weekStart, type ISODate } from '../lib/dates'
+import { goalsFor } from '../lib/actions'
+import { weekKey } from '../lib/period'
+import type { ISODate } from '../lib/dates'
 import { checkTitle, MAX_ESTIMATE_MIN } from '../lib/vagueness'
 import { Button, Field, Input, Textarea } from './ui'
 
@@ -12,17 +13,19 @@ import { Button, Field, Input, Textarea } from './ui'
  * Bộ lọc mơ hồ chỉ gợi ý mềm, không chặn.
  */
 export function TaskForm({
-  scheduledFor, heading, onCreated, onCancel, compact = false,
+  scheduledFor, heading, onCreated, onCancel, compact = false, asMain = true,
 }: {
   scheduledFor: ISODate
   heading?: string
   onCreated: (taskId: string) => void
   onCancel?: () => void
   compact?: boolean
+  /** Gắn sao việc quan trọng nhất của ngày ngay khi tạo. */
+  asMain?: boolean
 }) {
   const { t } = useT()
   const goals = useLiveQuery(
-    () => db.goals.where('weekStart').equals(weekStart(scheduledFor)).filter((g) => !g.deleted && g.status === 'open').toArray(),
+    async () => (await goalsFor(weekKey(scheduledFor))).filter((g) => g.status === 'open'),
     [scheduledFor], [],
   )
   const [title, setTitle] = useState('')
@@ -52,6 +55,7 @@ export function TaskForm({
       nextAction,
       scheduledFor,
       goalId: goalId || undefined,
+      isMain: asMain,
     }
     const created = await createTask(input)
     onCreated(created.id)

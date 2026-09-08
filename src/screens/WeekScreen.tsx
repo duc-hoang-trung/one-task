@@ -2,7 +2,8 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { useState } from 'react'
 import { Button, Card, Input, Muted, Page, Stat } from '../components/ui'
 import { fmtDate, useT } from '../i18n'
-import { addGoal, deleteParking, MAX_GOALS_PER_WEEK, resolveParking, setGoalStatus } from '../lib/actions'
+import { addGoal, deleteParking, goalsFor, resolveParking, setGoalStatus, SOFT_MAX_WEEK_GOALS as MAX_GOALS_PER_WEEK } from '../lib/actions'
+import { weekKey } from '../lib/period'
 import { db } from '../lib/db'
 import { addDays, weekStart, type ISODate } from '../lib/dates'
 import { computeWeekMetrics } from '../lib/metrics'
@@ -10,7 +11,7 @@ import type { Settings, WeekGoal } from '../lib/types'
 
 function GoalSlots({ ws, label, today }: { ws: ISODate; label: string; today: ISODate }) {
   const { t, lang } = useT()
-  const goals = useLiveQuery(() => db.goals.where('weekStart').equals(ws).filter((g) => !g.deleted).toArray(), [ws], [])
+  const goals = useLiveQuery(() => goalsFor(weekKey(ws)), [ws], [])
   const open = goals.filter((g) => g.status === 'open')
   const closed = goals.filter((g) => g.status !== 'open')
   const [title, setTitle] = useState('')
@@ -22,11 +23,7 @@ function GoalSlots({ ws, label, today }: { ws: ISODate; label: string; today: IS
       setErr(t('week.goal.empty'))
       return
     }
-    const g = await addGoal(ws, title)
-    if (!g) {
-      setErr(t('week.goal.max', { n: MAX_GOALS_PER_WEEK }))
-      return
-    }
+    await addGoal({ horizon: 'week', periodKey: weekKey(ws), title, area: 'personal' })
     setTitle('')
     setErr('')
   }

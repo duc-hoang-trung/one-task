@@ -99,7 +99,7 @@ export function computeWeekMetrics(args: {
     for (const df of t.deferrals) {
       if (df.fromDate >= ws && df.fromDate <= weekEnd) deferrals[df.reason]++
     }
-    if (t.status === 'done' && t.scheduledFor >= ws && t.scheduledFor <= weekEnd) tasksDone++
+    if (t.status === 'done' && t.scheduledFor && t.scheduledFor >= ws && t.scheduledFor <= weekEnd) tasksDone++
   }
 
   return {

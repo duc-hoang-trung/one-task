@@ -2,11 +2,11 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { db } from './db'
 import {
   addGoal, closeDay, closeStaleSessions, createTask, deferTask, endSession, extendSession, openMorning,
-  resolveParking, addParking, startSession, activeSession, MAX_GOALS_PER_WEEK, startBreak,
+  resolveParking, addParking, startSession, activeSession, startBreak, setMain, scheduleTask, promoteToTask, carryOver, checkinGoal, goalsFor, reorderTasks, completeTask,
 } from './actions'
 
 const base = {
-  title: 'Làm 20 câu S3', dod: ['20 câu có đáp án', 'Ghi 3 lỗi sai'], consequence: 'Trượt kỳ thi tháng 10',
+  title: 'Làm 20 câu S3', area: 'personal' as const, dod: ['20 câu có đáp án', 'Ghi 3 lỗi sai'], consequence: 'Trượt kỳ thi tháng 10',
   estimateMin: 45, nextAction: 'Mở quiz S3, làm câu 1–5', scheduledFor: '2026-09-08',
 }
 
@@ -93,10 +93,56 @@ describe('parking + goals', () => {
     await resolveParking(p.id, 'tomorrow', '2026-09-08')
     expect((await db.parking.get(p.id))!.forDate).toBe('2026-09-09')
   })
-  it(`không quá ${MAX_GOALS_PER_WEEK} mục tiêu mở một tuần`, async () => {
-    expect(await addGoal('2026-09-07', 'Hoàn thành module S3')).not.toBeNull()
-    expect(await addGoal('2026-09-07', 'Nộp 3 CV')).not.toBeNull()
-    expect(await addGoal('2026-09-07', 'Đọc 100 trang')).toBeNull()
+  it('goal theo kỳ + check-in', async () => {
+    const g = await addGoal({ horizon: 'week', periodKey: '2026-W37', title: 'Nộp 2 CV', area: 'work' })
+    await addGoal({ horizon: 'quarter', periodKey: '2026-Q3', title: 'Đổi việc', area: 'work' })
+    await checkinGoal(g.id, 'behind', 'mới nộp 1')
+    const week = await goalsFor('2026-W37')
+    expect(week).toHaveLength(1)
+    expect(week[0].checkins[0]).toMatchObject({ state: 'behind', note: 'mới nộp 1' })
+  })
+  it('promoteToTask biến parking thành task backlog', async () => {
+    await addParking('Hỏi HR về bảo hiểm', '2026-09-08')
+    const p = (await db.parking.toArray())[0]
+    const t = await promoteToTask(p.id, { area: 'work', quadrant: 'q3' })
+    expect(t).toMatchObject({ title: 'Hỏi HR về bảo hiểm', area: 'work', quadrant: 'q3', scheduledFor: undefined })
+    expect((await db.parking.get(p.id))!.promotedTaskId).toBe(t!.id)
+  })
+})
+
+describe('multi-task day', () => {
+  it('nhiều task một ngày, order tăng dần, chỉ 1 MIT', async () => {
+    const a = await createTask({ ...base, title: 'A' })
+    const b = await createTask({ ...base, title: 'B', area: 'work' })
+    const c = await createTask({ ...base, title: 'C', isMain: true })
+    expect([a.order, b.order, c.order]).toEqual([0, 1, 2])
+    expect((await db.tasks.get(c.id))!.isMain).toBe(true)
+    await setMain(a.id)
+    expect((await db.tasks.get(a.id))!.isMain).toBe(true)
+    expect((await db.tasks.get(c.id))!.isMain).toBe(false)
+    await reorderTasks([c.id, a.id, b.id])
+    expect((await db.tasks.get(c.id))!.order).toBe(0)
+  })
+  it('scheduleTask về backlog gỡ sao; lên ngày mới giữ sao và xuống cuối', async () => {
+    const a = await createTask({ ...base, title: 'A', isMain: true })
+    await createTask({ ...base, title: 'X', scheduledFor: '2026-09-09' })
+    await scheduleTask(a.id, undefined)
+    let t = (await db.tasks.get(a.id))!
+    expect(t.scheduledFor).toBeUndefined()
+    expect(t.isMain).toBe(false)
+    await setMain(a.id) // backlog: không có ngày → chỉ set flag
+    await scheduleTask(a.id, '2026-09-09')
+    t = (await db.tasks.get(a.id))!
+    expect(t.scheduledFor).toBe('2026-09-09')
+    expect(t.order).toBe(1)
+  })
+  it('carryOver dời mọi việc chưa xong sang mai', async () => {
+    const a = await createTask({ ...base, title: 'A' })
+    const b = await createTask({ ...base, title: 'B' })
+    await completeTask(a.id)
+    expect(await carryOver('2026-09-08', '2026-09-09')).toBe(1)
+    expect((await db.tasks.get(b.id))!.scheduledFor).toBe('2026-09-09')
+    expect((await db.tasks.get(a.id))!.scheduledFor).toBe('2026-09-08')
   })
 })
 

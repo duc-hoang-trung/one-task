@@ -34,7 +34,7 @@ describe('computeWeekMetrics', () => {
     ]
     const tasks: Task[] = [
       {
-        id: 't', title: 'Làm 20 câu S3', dod: [], consequence: '', estimateMin: 30, nextAction: '',
+        id: 't', title: 'Làm 20 câu S3', area: 'personal', order: 0, dod: [], consequence: '', estimateMin: 30, nextAction: '',
         scheduledFor: '2026-09-10', status: 'done', createdAt: 0,
         deferrals: [
           { at: 0, fromDate: '2026-09-08', reason: 'dont-want' },

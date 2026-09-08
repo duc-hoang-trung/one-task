@@ -124,8 +124,7 @@ await page.waitForTimeout(400)
 await page.getByPlaceholder(/Hoàn thành 3 module/).first().fill('Nộp 2 CV')
 await page.getByRole('button', { name: 'Thêm' }).first().click()
 await page.waitForTimeout(400)
-await page.waitForTimeout(200)
-await page.waitForTimeout(500); console.log(await page.locator('section').first().innerText()); if (await page.locator('section').first().getByPlaceholder(/Hoàn thành 3 module/).isVisible().catch(() => false)) throw new Error('Vẫn cho thêm mục tiêu thứ 3')
+await expectText('Nộp 2 CV')
 await shot('12-week')
 
 // 11b. Calendar: past day detail, future day plan, too-far blocked

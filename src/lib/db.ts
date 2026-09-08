@@ -1,5 +1,6 @@
 import Dexie, { type EntityTable } from 'dexie'
-import type { DayLog, ParkingItem, Session, Settings, Task, WeekGoal } from './types'
+import type { DayLog, Goal, ParkingItem, Session, Settings, Task } from './types'
+import { weekKey } from './period'
 import { DEFAULT_SETTINGS } from './types'
 import type { ISODate } from './dates'
 import { now } from './clock'
@@ -16,7 +17,7 @@ export interface OutboxRow {
 }
 
 export class MotViecDB extends Dexie {
-  goals!: EntityTable<WeekGoal, 'id'>
+  goals!: EntityTable<Goal, 'id'>
   tasks!: EntityTable<Task, 'id'>
   sessions!: EntityTable<Session, 'id'>
   parking!: EntityTable<ParkingItem, 'id'>
@@ -46,6 +47,28 @@ export class MotViecDB extends Dexie {
         for (const name of SYNC_TABLES) {
           await tx.table(name).toCollection().modify((r) => { r.updatedAt ??= t })
         }
+      })
+    // v4: nhiều việc mỗi ngày (area, quadrant, isMain, order, backlog) + goals theo tuần/quý/năm
+    this.version(4)
+      .stores({
+        tasks: 'id, scheduledFor, status, goalId, area, quadrant',
+        goals: 'id, horizon, periodKey, parentId, status',
+      })
+      .upgrade(async (tx) => {
+        await tx.table('tasks').toCollection().modify((t) => {
+          t.area ??= 'personal'
+          t.isMain ??= true // trước v4 mỗi ngày đúng 1 việc chính
+          t.order ??= 0
+        })
+        await tx.table('goals').toCollection().modify((g) => {
+          if (!g.horizon) {
+            g.horizon = 'week'
+            g.periodKey = g.weekStart ? weekKey(g.weekStart) : ''
+            g.area ??= 'personal'
+            g.checkins ??= []
+            delete g.weekStart
+          }
+        })
       })
   }
 }
@@ -119,11 +142,27 @@ export async function getOrCreateDayLog(date: ISODate): Promise<DayLog> {
   return put('dayLogs', fresh)
 }
 
-/** Việc chính của một ngày: task lên lịch cho ngày đó, chưa đóng. */
+export const isOpen = (t: Task) => !t.deleted && (t.status === 'planned' || t.status === 'active')
+
+/** Việc quan trọng nhất (MIT) của một ngày, chưa đóng. */
 export async function mainTaskFor(date: ISODate): Promise<Task | undefined> {
   const list = await db.tasks.where('scheduledFor').equals(date).toArray()
-  return list.find((t) => !t.deleted && (t.status === 'planned' || t.status === 'active'))
+  return list.find((t) => t.isMain && isOpen(t))
 }
+
+/** Mọi task của một ngày (kể cả đã xong), bỏ đã xoá, theo order. */
+export async function tasksFor(date: ISODate): Promise<Task[]> {
+  const list = await db.tasks.where('scheduledFor').equals(date).toArray()
+  return list.filter((t) => !t.deleted && t.status !== 'dropped').sort(byOrder)
+}
+
+/** Backlog: chưa lên lịch, chưa đóng. */
+export async function backlogTasks(): Promise<Task[]> {
+  const list = await db.tasks.filter((t) => t.scheduledFor === undefined && isOpen(t)).toArray()
+  return list.sort(byOrder)
+}
+
+export const byOrder = (a: Task, b: Task) => (a.order ?? 0) - (b.order ?? 0) || a.createdAt - b.createdAt
 
 export const notDeleted = <T extends { deleted?: boolean }>(r: T) => !r.deleted
 
