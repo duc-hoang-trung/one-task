@@ -3,9 +3,9 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
-// GitHub Pages serves the site under /<repo>/. Override with VITE_BASE when
-// deploying elsewhere (e.g. VITE_BASE=/ for a custom domain).
-const base = process.env.VITE_BASE ?? '/code-challenge/'
+// Base path: '/' khi dev; trên GitHub Pages là '/<tên repo>/' (workflow deploy.yml
+// truyền VITE_BASE từ tên repo, nên cùng code chạy được ở bất kỳ repo nào).
+const base = process.env.VITE_BASE ?? '/'
 
 export default defineConfig({
   base,

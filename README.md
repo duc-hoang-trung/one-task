@@ -23,7 +23,7 @@ Tạo việc bắt buộc 5 trường: **Việc** (động từ + đếm đượ
 
 ```bash
 npm install
-npm run dev        # http://localhost:5173/code-challenge/
+npm run dev        # http://localhost:5173/
 npm test           # 47 test Vitest (logic + Dexie trên fake-indexeddb)
 npm run build      # tsc + vite build + service worker
 ```
@@ -31,9 +31,9 @@ npm run build      # tsc + vite build + service worker
 Test/demo bằng giờ giả lập (giữ trong tab cho tới khi `?reset-clock`):
 
 ```
-http://localhost:5173/code-challenge/?d=2026-09-08&t=07:30   # sáng
-http://localhost:5173/code-challenge/?d=2026-09-08&t=21:05   # đến giờ đóng ngày
-http://localhost:5173/code-challenge/?d=2026-09-09&t=00:30   # vẫn là đêm hôm trước (ngày logic đổi lúc 04:00)
+http://localhost:5173/?d=2026-09-08&t=07:30   # sáng
+http://localhost:5173/?d=2026-09-08&t=21:05   # đến giờ đóng ngày
+http://localhost:5173/?d=2026-09-09&t=00:30   # vẫn là đêm hôm trước (ngày logic đổi lúc 04:00)
 ```
 
 Playwright walkthrough (đi hết 2 ngày, chụp màn hình vào `e2e/shots/`):
@@ -46,7 +46,7 @@ node e2e/walkthrough.mjs
 
 ## Deploy
 
-GitHub Actions build + deploy lên GitHub Pages khi push `main` (`.github/workflows/deploy.yml`). Cần bật một lần: **Settings → Pages → Source: GitHub Actions**. URL: `https://<user>.github.io/code-challenge/`. Đổi base path bằng `VITE_BASE=/`.
+GitHub Actions build + deploy lên GitHub Pages khi push `main` (`.github/workflows/deploy.yml`). Cần bật một lần: **Settings → Pages → Source: GitHub Actions**. Base path lấy theo tên repo, URL: `https://<user>.github.io/<repo>/`. Deploy nơi khác thì đặt `VITE_BASE`.
 
 Cài lên điện thoại: mở URL → "Thêm vào màn hình chính" (PWA, chạy offline).
 

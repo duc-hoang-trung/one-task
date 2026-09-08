@@ -3,7 +3,7 @@ import { chromium } from 'playwright'
 // Cần: npm i -D playwright && npx playwright install chromium (hoặc CHROMIUM_PATH=/path/to/chrome)
 // Đi hết vòng đời 2 ngày bằng giờ giả lập (?d&t) và chụp màn hình vào e2e/shots/.
 
-const BASE = 'http://localhost:4173/code-challenge/'
+const BASE = process.env.BASE_URL ?? 'http://localhost:4173/'
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {})
 const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 })
 const page = await ctx.newPage()
