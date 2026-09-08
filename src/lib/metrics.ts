@@ -20,9 +20,27 @@ export interface WeekMetrics {
   daysCounted: number
 }
 
+/**
+ * Phút tập trung liên tục kể từ lần nghỉ cuối (hoặc từ đầu ngày). Dùng để gợi ý nghỉ.
+ * "Liên tục" hiểu theo phiên: mọi phiên focus sau phiên break cuối cùng.
+ */
+export function focusStreakMin(sessionsToday: Session[], nowMs: number): number {
+  const sorted = [...sessionsToday].sort((a, b) => a.startedAt - b.startedAt)
+  let streak = 0
+  for (const s of sorted) {
+    if (s.kind === 'break') {
+      streak = 0
+      continue
+    }
+    streak += Math.max(0, Math.round(((s.endedAt ?? nowMs) - s.startedAt) / 60_000))
+  }
+  return streak
+}
+
 export function focusMinutesByDate(sessions: Session[], nowMs: number): Map<ISODate, number> {
   const m = new Map<ISODate, number>()
   for (const s of sessions) {
+    if (s.kind === 'break') continue
     const end = s.endedAt ?? nowMs
     const min = Math.max(0, Math.round((end - s.startedAt) / 60_000))
     m.set(s.date, (m.get(s.date) ?? 0) + min)

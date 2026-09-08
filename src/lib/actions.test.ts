@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { db } from './db'
 import {
   addGoal, closeDay, closeStaleSessions, createTask, deferTask, endSession, extendSession, openMorning,
-  resolveParking, addParking, startSession, activeSession, MAX_GOALS_PER_WEEK,
+  resolveParking, addParking, startSession, activeSession, MAX_GOALS_PER_WEEK, startBreak,
 } from './actions'
 
 const base = {
@@ -97,5 +97,18 @@ describe('parking + goals', () => {
     expect(await addGoal('2026-09-07', 'Hoàn thành module S3')).not.toBeNull()
     expect(await addGoal('2026-09-07', 'Nộp 3 CV')).not.toBeNull()
     expect(await addGoal('2026-09-07', 'Đọc 100 trang')).toBeNull()
+  })
+})
+
+describe('breaks', () => {
+  it('startBreak đóng phiên focus và mở phiên break', async () => {
+    const t = await createTask(base)
+    const f = await startSession(t.id, '2026-09-08', 10, 0)
+    const b = await startBreak('2026-09-08', 5, 25 * 60_000)
+    expect((await db.sessions.get(f))!.endedAt).toBe(25 * 60_000)
+    const br = (await db.sessions.get(b))!
+    expect(br.kind).toBe('break')
+    expect(br.taskId).toBe('')
+    expect((await activeSession())!.id).toBe(b)
   })
 })

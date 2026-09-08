@@ -21,6 +21,10 @@ export class MotViecDB extends Dexie {
       dayLogs: 'date',
       settings: 'id',
     })
+    // v2: phiên có loại focus/break
+    this.version(2)
+      .stores({ sessions: 'id, taskId, date, startedAt, kind' })
+      .upgrade((tx) => tx.table('sessions').toCollection().modify((s) => { s.kind ??= 'focus' }))
   }
 }
 

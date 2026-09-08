@@ -1,11 +1,13 @@
 import { useState } from 'react'
-import { Button, Card, Field, Input, Muted, Page } from '../components/ui'
+import { Button, Card, Field, Input, Muted, Page, Select } from '../components/ui'
+import { useT } from '../i18n'
 import { wipeAll } from '../lib/actions'
 import { isClockOverridden } from '../lib/clock'
 import { db, exportAll } from '../lib/db'
-import type { Settings } from '../lib/types'
+import type { LangSetting, Settings } from '../lib/types'
 
 export function SettingsScreen({ settings, onboarding = false, onDone }: { settings: Settings; onboarding?: boolean; onDone?: () => void }) {
+  const { t } = useT()
   const [s, setS] = useState(settings)
   const [saved, setSaved] = useState(false)
   const [confirmWipe, setConfirmWipe] = useState(false)
@@ -28,58 +30,78 @@ export function SettingsScreen({ settings, onboarding = false, onDone }: { setti
     URL.revokeObjectURL(url)
   }
 
+  // Đổi ngôn ngữ áp dụng ngay (lưu luôn) để người dùng thấy hiệu quả.
+  async function setLang(lang: LangSetting) {
+    const next = { ...s, lang }
+    setS(next)
+    await db.settings.put({ ...next, onboarded: settings.onboarded })
+  }
+
   return (
-    <Page title={onboarding ? 'Một Việc' : 'Cài đặt'} subtitle={onboarding ? 'Ba mốc giờ. Còn lại app tự lo.' : undefined}>
+    <Page title={onboarding ? t('app.name') : t('set.title')} subtitle={onboarding ? t('onb.subtitle') : undefined}>
       {onboarding && (
-        <Card className="bg-stone-100 ring-0">
-          <p className="text-stone-800">Một việc chính mỗi ngày. Sáng 1 phút: bắt đầu. Tối 3 phút: đóng ngày. Sau đó khoá tới sáng.</p>
+        <Card tone="accent">
+          <p className="text-ink-2">{t('onb.intro')}</p>
         </Card>
       )}
       <Card>
         <div className="flex flex-col gap-4">
-          <Field label="Giờ đóng ngày (Shutdown)" hint="Nên cách giờ ngủ ≥ 2 tiếng. App sẽ nhắc đúng một lần.">
+          <Field label={t('set.lang')}>
+            <Select value={s.lang} onChange={(e) => void setLang(e.target.value as LangSetting)}>
+              <option value="auto">{t('set.lang.auto')}</option>
+              <option value="vi">Tiếng Việt</option>
+              <option value="en">English</option>
+            </Select>
+          </Field>
+          <Field label={t('set.shutdown')} hint={t('set.shutdown.hint')}>
             <Input type="time" value={s.shutdownTime} onChange={(e) => setS({ ...s, shutdownTime: e.target.value })} />
           </Field>
-          <Field label="Giờ ngủ mục tiêu">
+          <Field label={t('set.bedtime')}>
             <Input type="time" value={s.bedtimeTarget} onChange={(e) => setS({ ...s, bedtimeTarget: e.target.value })} />
           </Field>
-          <Field label="Giờ mở máy buổi sáng" hint="Chỉ để hiện trong Night mode: 'Sáng mai lúc…'.">
+          <Field label={t('set.morning')}>
             <Input type="time" value={s.morningTime} onChange={(e) => setS({ ...s, morningTime: e.target.value })} />
           </Field>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Phút tối thiểu">
+            <Field label={t('set.minFocus')}>
               <Input type="number" min={5} max={60} value={s.minFocusMin} onChange={(e) => setS({ ...s, minFocusMin: Number(e.target.value) || 10 })} />
             </Field>
-            <Field label="Phút gia hạn">
+            <Field label={t('set.extend')}>
               <Input type="number" min={5} max={60} value={s.extendMin} onChange={(e) => setS({ ...s, extendMin: Number(e.target.value) || 15 })} />
             </Field>
+            <Field label={t('set.pomodoro')} hint={t('set.pomodoro.hint')}>
+              <Input type="number" min={10} max={90} value={s.pomodoroMin} onChange={(e) => setS({ ...s, pomodoroMin: Number(e.target.value) || 25 })} />
+            </Field>
+            <Field label={t('set.break')}>
+              <Input type="number" min={1} max={30} value={s.breakMin} onChange={(e) => setS({ ...s, breakMin: Number(e.target.value) || 5 })} />
+            </Field>
           </div>
-          <Button size="lg" onClick={() => void save()}>{saved ? 'Đã lưu' : onboarding ? 'Bắt đầu' : 'Lưu'}</Button>
+          <Button size="lg" onClick={() => void save()}>{saved ? t('common.saved') : onboarding ? t('onb.start') : t('common.save')}</Button>
         </div>
       </Card>
 
       {!onboarding && (
         <>
           <Card>
-            <h2 className="font-semibold">Dữ liệu</h2>
-            <Muted>Mọi thứ nằm trong trình duyệt này (IndexedDB). Không có server, không có tài khoản.</Muted>
+            <h2 className="font-display text-xl">{t('set.data')}</h2>
+            <Muted>{t('set.data.hint')}</Muted>
             <div className="mt-3 flex flex-col gap-2">
-              <Button variant="secondary" onClick={() => void download()}>Tải bản sao JSON</Button>
+              <Button variant="secondary" onClick={() => void download()}>{t('set.export')}</Button>
               {confirmWipe ? (
                 <div className="flex gap-2">
-                  <Button variant="danger" onClick={() => void wipeAll().then(() => location.reload())}>Xoá thật</Button>
-                  <Button variant="ghost" onClick={() => setConfirmWipe(false)}>Thôi</Button>
+                  <Button variant="danger" onClick={() => void wipeAll().then(() => location.reload())}>{t('set.wipe.confirm')}</Button>
+                  <Button variant="ghost" onClick={() => setConfirmWipe(false)}>{t('common.cancel')}</Button>
                 </div>
               ) : (
-                <Button variant="danger" onClick={() => setConfirmWipe(true)}>Xoá toàn bộ dữ liệu…</Button>
+                <Button variant="danger" onClick={() => setConfirmWipe(true)}>{t('set.wipe')}</Button>
               )}
             </div>
           </Card>
           <Card>
-            <h2 className="font-semibold">Test / demo</h2>
+            <h2 className="font-display text-xl">{t('set.demo')}</h2>
             <Muted>
-              Thêm <code>?d=YYYY-MM-DD&t=HH:MM</code> vào URL để giả lập thời gian trong tab này; <code>?reset-clock</code> để về giờ thật.
-              {isClockOverridden() && <strong className="block text-amber-700">Đang chạy giờ giả lập.</strong>}
+              {t('set.demo.hint')}
+              {isClockOverridden() && <strong className="block text-accent">{t('set.demo.active')}</strong>}
             </Muted>
           </Card>
         </>

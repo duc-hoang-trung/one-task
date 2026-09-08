@@ -27,7 +27,7 @@ export interface Task {
   title: string
   dod: DodItem[]
   consequence: string
-  estimateMin: number
+  estimateMin?: number
   nextAction: string
   scheduledFor: ISODate
   status: TaskStatus
@@ -36,14 +36,18 @@ export interface Task {
   doneAt?: number
 }
 
+export type SessionKind = 'focus' | 'break'
 export interface Session {
   id: string
+  /** với break: '' */
   taskId: string
   date: ISODate
   startedAt: number
   endedAt?: number
   /** Số phút dự định cho lượt này (10, 15, 25…) */
   plannedMin: number
+  /** undefined = focus (bản ghi cũ) */
+  kind?: SessionKind
 }
 
 export type ParkingResolution = 'drop' | 'later' | 'tomorrow'
@@ -69,6 +73,7 @@ export interface DayLog {
   mainTaskOutcome?: 'done' | 'progress' | 'none'
 }
 
+export type LangSetting = 'auto' | 'vi' | 'en'
 export interface Settings {
   id: 'default'
   shutdownTime: HM
@@ -77,6 +82,10 @@ export interface Settings {
   minFocusMin: number
   extendMin: number
   onboarded: boolean
+  lang: LangSetting
+  /** Sau bao nhiêu phút tập trung liền thì gợi ý nghỉ */
+  pomodoroMin: number
+  breakMin: number
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -87,4 +96,7 @@ export const DEFAULT_SETTINGS: Settings = {
   minFocusMin: 10,
   extendMin: 15,
   onboarded: false,
+  lang: 'auto',
+  pomodoroMin: 25,
+  breakMin: 5,
 }

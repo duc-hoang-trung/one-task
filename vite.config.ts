@@ -15,13 +15,22 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['icon.svg'],
+      workbox: {
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: { cacheName: 'google-fonts', expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 365 } },
+          },
+        ],
+      },
       manifest: {
         name: 'Một Việc',
         short_name: 'Một Việc',
         description: 'Một việc chính mỗi ngày. Đóng ngày đúng giờ. Quay lại khi trượt.',
         lang: 'vi',
-        theme_color: '#1c1917',
-        background_color: '#fafaf9',
+        theme_color: '#f4eee3',
+        background_color: '#f4eee3',
         display: 'standalone',
         start_url: base,
         scope: base,

@@ -7,7 +7,7 @@ export interface NewTaskInput {
   title: string
   dod: string[]
   consequence: string
-  estimateMin: number
+  estimateMin?: number
   nextAction: string
   scheduledFor: ISODate
   goalId?: string
@@ -20,7 +20,7 @@ export async function createTask(input: NewTaskInput): Promise<Task> {
     title: input.title.trim(),
     dod: input.dod.map((text) => ({ text: text.trim(), done: false })).filter((d) => d.text),
     consequence: input.consequence.trim(),
-    estimateMin: input.estimateMin,
+    estimateMin: input.estimateMin && input.estimateMin > 0 ? input.estimateMin : undefined,
     nextAction: input.nextAction.trim(),
     scheduledFor: input.scheduledFor,
     status: 'planned',
@@ -85,8 +85,17 @@ export async function startSession(taskId: string, date: ISODate, plannedMin: nu
   const open = await activeSession()
   if (open) await db.sessions.update(open.id, { endedAt: nowMs })
   const id = uid()
-  await db.sessions.add({ id, taskId, date, startedAt: nowMs, plannedMin })
+  await db.sessions.add({ id, taskId, date, startedAt: nowMs, plannedMin, kind: 'focus' })
   await db.tasks.update(taskId, { status: 'active' })
+  return id
+}
+
+/** Nghỉ ngắn: kết thúc phiên đang chạy, mở phiên break. Không tính vào phút tập trung. */
+export async function startBreak(date: ISODate, plannedMin: number, nowMs = now().getTime()) {
+  const open = await activeSession()
+  if (open) await db.sessions.update(open.id, { endedAt: nowMs })
+  const id = uid()
+  await db.sessions.add({ id, taskId: '', date, startedAt: nowMs, plannedMin, kind: 'break' })
   return id
 }
 

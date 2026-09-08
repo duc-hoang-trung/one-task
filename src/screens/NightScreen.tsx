@@ -1,32 +1,36 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { ParkingLot } from '../components/ParkingLot'
-import { Card, Muted, Page } from '../components/ui'
+import { Card, Page } from '../components/ui'
+import { useT } from '../i18n'
 import { db, mainTaskFor } from '../lib/db'
 import { addDays, type ISODate } from '../lib/dates'
 import type { Settings } from '../lib/types'
 
 /** Night mode: khoá. Không task, không kế hoạch, không list. Chỉ Parking Lot. */
 export function NightScreen({ today, settings }: { today: ISODate; settings: Settings }) {
+  const { t } = useT()
   const tomorrow = addDays(today, 1)
   const next = useLiveQuery(() => mainTaskFor(tomorrow), [tomorrow])
   const log = useLiveQuery(() => db.dayLogs.get(today), [today])
 
   return (
-    <div className="min-h-full bg-stone-900 text-stone-100">
-      <Page title="Đã đóng ngày" subtitle={log?.shutdownAt ? `lúc ${log.shutdownAt}` : undefined}>
-        <Card tone="dark">
-          <Muted className="text-stone-400">Đã có kế hoạch cho việc này. Sáng mai lúc {settings.morningTime}:</Muted>
-          <p className="mt-2 text-xl font-medium leading-snug">{next?.nextAction ?? '—'}</p>
-          {next && <Muted className="mt-2 text-stone-400">{next.title}</Muted>}
+    <div className="min-h-full bg-night text-night-text" style={{ backgroundImage: 'radial-gradient(900px 500px at 50% -10%, rgb(245 158 11 / 0.08), transparent 60%)' }}>
+      <Page title={<span className="text-night-text">{t('night.title')}</span>} subtitle={log?.shutdownAt ? t('night.at', { t: log.shutdownAt }) : undefined}>
+        <Card tone="dark" className="py-7">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-night-muted">{t('night.planned', { t: settings.morningTime })}</p>
+          <p className="font-display mt-3 text-[28px] leading-[1.15]">{next ? next.nextAction || next.title : '—'}</p>
+          {next?.nextAction && <p className="mt-3 text-sm text-night-muted">{next.title}</p>}
         </Card>
         {log?.worry?.concern && (
           <Card tone="dark">
-            <Muted className="text-stone-400">Điều đang lo đã có bước tiếp theo:</Muted>
-            <p className="mt-1">{log.worry.nextStep || '(chưa ghi bước)'}</p>
+            <p className="text-sm text-night-muted">{t('night.worry')}</p>
+            <p className="mt-1">{log.worry.nextStep || t('night.noStep')}</p>
           </Card>
         )}
-        <ParkingLot today={today} dark />
-        <Muted className="text-center text-stone-500">Giờ ngủ mục tiêu {settings.bedtimeTarget}. Không có gì cần quyết cho tới sáng.</Muted>
+        <Card tone="dark" className="py-4">
+          <ParkingLot today={today} dark />
+        </Card>
+        <p className="text-center text-sm text-night-muted">{t('night.footer', { t: settings.bedtimeTarget })}</p>
       </Page>
     </div>
   )

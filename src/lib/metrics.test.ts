@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { computeWeekMetrics } from './metrics'
+import { computeWeekMetrics, focusStreakMin } from './metrics'
 import type { DayLog, Session, Task } from './types'
 
 const settings = { minFocusMin: 10, shutdownTime: '21:00', bedtimeTarget: '23:00' }
@@ -72,5 +72,25 @@ describe('computeWeekMetrics', () => {
       nowMs: ms('2026-09-07', 9, 12),
     })
     expect(m.daysWithFocus).toBe(1)
+  })
+})
+
+describe('breaks', () => {
+  const s = (date: string, startMin: number, min: number, kind?: 'focus' | 'break'): Session => ({
+    id: `${date}-${startMin}-${kind}`, taskId: kind === 'break' ? '' : 't', date,
+    startedAt: ms(date, 9, startMin), endedAt: ms(date, 9, startMin) + min * 60_000, plannedMin: min, kind,
+  })
+  it('phút break không tính vào focus', () => {
+    const m = computeWeekMetrics({
+      weekStart: '2026-09-07', today: '2026-09-07',
+      sessions: [s('2026-09-07', 0, 5, 'focus'), s('2026-09-07', 5, 30, 'break')],
+      dayLogs: [], tasks: [], settings,
+    })
+    expect(m.daysWithFocus).toBe(0)
+  })
+  it('focusStreakMin reset sau break', () => {
+    const list = [s('2026-09-07', 0, 20, 'focus'), s('2026-09-07', 20, 5, 'break'), s('2026-09-07', 25, 10, 'focus'), s('2026-09-07', 35, 7)]
+    expect(focusStreakMin(list, ms('2026-09-07', 10))).toBe(17)
+    expect(focusStreakMin(list.slice(0, 1), ms('2026-09-07', 10))).toBe(20)
   })
 })

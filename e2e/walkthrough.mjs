@@ -5,12 +5,13 @@ import { chromium } from 'playwright'
 
 const BASE = process.env.BASE_URL ?? 'http://localhost:4173/'
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {})
-const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 })
+const dark = process.env.DARK === '1'
+const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, locale: 'vi-VN', colorScheme: dark ? 'dark' : 'light' })
 const page = await ctx.newPage()
 const errors = []
 page.on('pageerror', (e) => errors.push(String(e)))
-page.on('console', (m) => m.type() === 'error' && errors.push(m.text()))
-const shot = (n) => page.screenshot({ path: `e2e/shots/${n}.png`, fullPage: true })
+page.on('console', (m) => m.type() === 'error' && !/Failed to load resource/.test(m.text()) && errors.push(m.text()))
+const shot = (n) => page.screenshot({ path: `e2e/shots/${n}${dark ? '-dark' : ''}.png`, fullPage: true })
 const go = async (d, t) => { await page.goto(`${BASE}?d=${d}&t=${t}`); await page.waitForTimeout(400) }
 const expectText = async (t) => {
   try { await page.getByText(t, { exact: false }).first().waitFor({ state: 'visible', timeout: 3000 }) }
@@ -23,18 +24,15 @@ await expectText('Ba mốc giờ')
 await shot('01-onboarding')
 await page.getByRole('button', { name: 'Bắt đầu' }).click()
 
-// 2. Morning without task → form; vague title rejected
+// 2. Morning without task → form; vague title only gets a soft hint, never blocks
 await expectText('Chưa có việc chính hôm nay')
 await page.getByPlaceholder('Làm 20 câu S3').fill('Học AWS')
+await expectText('Gợi ý')
+await shot('02-form-soft-hint')
+await page.getByPlaceholder('Làm 20 câu S3').fill('Làm 20 câu S3')
+await page.getByPlaceholder('Mở quiz S3, làm câu 1–5').fill('Mở quiz S3, làm câu 1–5')
 await page.getByPlaceholder(/20 câu có đáp án/).fill('20 câu có đáp án\nGhi 3 lỗi sai')
 await page.getByPlaceholder(/Trượt kỳ thi/).fill('Trượt kỳ thi SAA tháng 10, mất 3 tháng ôn lại')
-await page.getByPlaceholder('45').fill('120')
-await page.getByPlaceholder('Mở quiz S3, làm câu 1–5').fill('Mở quiz S3, làm câu 1–5')
-await page.getByRole('button', { name: 'Chốt việc này' }).click()
-await expectText('không cho biết khi nào thì xong')
-await expectText('quá lớn cho một việc ngày')
-await shot('02-form-rejected')
-await page.getByPlaceholder('Làm 20 câu S3').fill('Làm 20 câu S3')
 await page.getByPlaceholder('45').fill('45')
 await page.getByRole('button', { name: 'Chốt việc này' }).click()
 
@@ -62,6 +60,16 @@ await page.waitForTimeout(200)
 await expectText('1 ý chờ xử lý')
 await shot('06-today-timer')
 
+// 5b. 30 minutes later: planned time over and streak ≥ 25' → break suggested
+await go('2026-09-08', '08:00')
+await expectText('Nghỉ 5 phút')
+await shot('06b-break-suggested')
+await page.getByRole('button', { name: 'Nghỉ 5 phút' }).click()
+await expectText('Đang nghỉ')
+await shot('06c-on-break')
+await page.getByRole('button', { name: 'Bỏ nghỉ, làm tiếp' }).click()
+await expectText('còn / 10')
+
 // 6. Jump to 21:05 (same logical day) → shutdown banner
 await go('2026-09-08', '21:05')
 await expectText('Đến giờ đóng ngày')
@@ -76,9 +84,6 @@ await page.getByRole('button', { name: 'Đóng ngày', exact: true }).click()
 // 7. Shutdown wizard: no task (done) → step 2 form for tomorrow
 await expectText('Việc chính cho mai')
 await page.getByPlaceholder('Làm 20 câu S3').fill('Làm 15 câu EC2')
-await page.getByPlaceholder(/20 câu có đáp án/).fill('15 câu có đáp án')
-await page.getByPlaceholder(/Trượt kỳ thi/).fill('Không kịp lịch ôn, thi trượt')
-await page.getByPlaceholder('45').fill('40')
 await page.getByPlaceholder('Mở quiz S3, làm câu 1–5').fill('Mở quiz EC2, làm câu 1–5')
 await shot('08-shutdown-step2')
 await page.getByRole('button', { name: 'Chốt việc này' }).click()
@@ -112,11 +117,7 @@ await expectText('Hỏi HR về bảo hiểm')
 
 // 11. Week screen
 await page.getByRole('button', { name: 'Tuần' }).click()
-await expectText('Review tuần')
-await page.getByPlaceholder(/Hoàn thành 3 module/).first().fill('Học AWS')
-await page.getByRole('button', { name: 'Thêm' }).first().click()
-await page.waitForTimeout(400)
-await expectText('không cho biết khi nào thì xong')
+await expectText('Nhìn lại tuần')
 await page.getByPlaceholder(/Hoàn thành 3 module/).first().fill('Hoàn thành 3 module đầu khoá SAA')
 await page.getByRole('button', { name: 'Thêm' }).first().click()
 await page.waitForTimeout(400)

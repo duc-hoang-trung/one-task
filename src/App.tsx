@@ -1,12 +1,14 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useEffect, useState } from 'react'
+import { Settings as SettingsIcon, Sun, Target } from 'lucide-react'
 import { useNow } from './hooks'
+import { LangContext, resolveLang, useT } from './i18n'
 import { activeSession, closeStaleSessions } from './lib/actions'
 import { isClockOverridden } from './lib/clock'
 import { db, mainTaskFor } from './lib/db'
 import { logicalDate, toHM } from './lib/dates'
 import { computePhase } from './lib/phase'
-import { DEFAULT_SETTINGS } from './lib/types'
+import { DEFAULT_SETTINGS, type Settings } from './lib/types'
 import { MorningScreen } from './screens/MorningScreen'
 import { NightScreen } from './screens/NightScreen'
 import { SettingsScreen } from './screens/SettingsScreen'
@@ -17,14 +19,24 @@ import { WeekScreen } from './screens/WeekScreen'
 type View = 'main' | 'week' | 'settings'
 
 export default function App() {
+  // Chỉ đọc trong liveQuery (transaction read-only); merge default ở ngoài.
+  const stored = useLiveQuery(() => db.settings.get('default'), [], null)
+  const settings: Settings | undefined = stored === null ? undefined : { ...DEFAULT_SETTINGS, ...stored }
+  if (settings === undefined) return null
+  return (
+    <LangContext.Provider value={resolveLang(settings.lang)}>
+      <Shell settings={settings} />
+    </LangContext.Provider>
+  )
+}
+
+function Shell({ settings }: { settings: Settings }) {
+  const { t } = useT()
   const now = useNow()
   const today = logicalDate(now)
   const [view, setView] = useState<View>('main')
   const [shutdown, setShutdown] = useState(false)
 
-  // Chỉ đọc trong liveQuery (transaction read-only); merge default ở ngoài.
-  const stored = useLiveQuery(() => db.settings.get('default'), [], null)
-  const settings = stored === null ? undefined : { ...DEFAULT_SETTINGS, ...stored }
   const todayLog = useLiveQuery(() => db.dayLogs.get(today), [today])
   const task = useLiveQuery(() => mainTaskFor(today), [today])
   const session = useLiveQuery(() => activeSession(), [today])
@@ -39,11 +51,9 @@ export default function App() {
     setView('main')
   }, [today])
 
-  if (settings === undefined) return null
   if (!settings.onboarded) return <SettingsScreen settings={settings} onboarding />
 
   const phase = computePhase({ todayLog })
-
   if (phase === 'night') return <NightScreen today={today} settings={settings} />
 
   let screen
@@ -59,29 +69,33 @@ export default function App() {
     screen = <TodayScreen today={today} task={task} session={session} settings={settings} now={now} onShutdown={() => setShutdown(true)} />
   }
 
-  const Tab = ({ v, label }: { v: View; label: string }) => (
-    <button
-      className={`flex-1 rounded-xl px-3 py-2 text-sm font-medium ${view === v && !shutdown ? 'bg-stone-900 text-stone-50' : 'text-stone-600 hover:bg-stone-100'}`}
-      onClick={() => {
-        setShutdown(false)
-        setView(v)
-      }}
-    >
-      {label}
-    </button>
-  )
+  const Tab = ({ v, label, icon }: { v: View; label: string; icon: React.ReactNode }) => {
+    const active = view === v && !shutdown
+    return (
+      <button
+        className={`flex flex-1 flex-col items-center gap-0.5 rounded-xl px-2 py-1.5 text-[11px] font-medium transition-colors ${active ? 'text-accent' : 'text-ink-3 hover:text-ink-2'}`}
+        onClick={() => {
+          setShutdown(false)
+          setView(v)
+        }}
+      >
+        {icon}
+        {label}
+      </button>
+    )
+  }
 
   return (
     <div className="min-h-full">
       {isClockOverridden() && (
-        <div className="bg-amber-100 px-3 py-1 text-center text-xs text-amber-900">Giờ giả lập: {today} {toHM(now)}</div>
+        <div className="bg-accent-soft px-3 py-1 text-center text-xs text-ink-2">{t('clock.fake')}: {today} {toHM(now)}</div>
       )}
       {screen}
-      <nav className="fixed inset-x-0 bottom-0 border-t border-stone-200 bg-stone-50/95 backdrop-blur">
-        <div className="mx-auto flex max-w-md gap-1 p-2">
-          <Tab v="main" label="Hôm nay" />
-          <Tab v="week" label="Tuần" />
-          <Tab v="settings" label="Cài đặt" />
+      <nav className="fixed inset-x-0 bottom-0 border-t border-line bg-paper/90 backdrop-blur-md" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+        <div className="mx-auto flex max-w-md gap-1 px-3 py-1.5">
+          <Tab v="main" label={t('nav.today')} icon={<Sun size={20} strokeWidth={1.75} />} />
+          <Tab v="week" label={t('nav.week')} icon={<Target size={20} strokeWidth={1.75} />} />
+          <Tab v="settings" label={t('nav.settings')} icon={<SettingsIcon size={20} strokeWidth={1.75} />} />
         </div>
       </nav>
     </div>

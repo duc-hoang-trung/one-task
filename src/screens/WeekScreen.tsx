@@ -1,14 +1,15 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useState } from 'react'
-import { Button, Card, Input, Muted, Page } from '../components/ui'
+import { Button, Card, Input, Muted, Page, Stat } from '../components/ui'
+import { fmtDate, useT } from '../i18n'
 import { addGoal, deleteParking, MAX_GOALS_PER_WEEK, resolveParking, setGoalStatus } from '../lib/actions'
 import { db } from '../lib/db'
-import { addDays, fmtDateVi, weekStart, type ISODate } from '../lib/dates'
+import { addDays, weekStart, type ISODate } from '../lib/dates'
 import { computeWeekMetrics } from '../lib/metrics'
 import type { Settings, WeekGoal } from '../lib/types'
-import { checkTitle } from '../lib/vagueness'
 
 function GoalSlots({ ws, label, today }: { ws: ISODate; label: string; today: ISODate }) {
+  const { t, lang } = useT()
   const goals = useLiveQuery(() => db.goals.where('weekStart').equals(ws).toArray(), [ws], [])
   const open = goals.filter((g) => g.status === 'open')
   const closed = goals.filter((g) => g.status !== 'open')
@@ -17,14 +18,13 @@ function GoalSlots({ ws, label, today }: { ws: ISODate; label: string; today: IS
   const isCurrent = ws === weekStart(today)
 
   async function add() {
-    const c = checkTitle(title)
-    if (!c.ok) {
-      setErr(`${c.reason} ${c.hint}`)
+    if (!title.trim()) {
+      setErr(t('week.goal.empty'))
       return
     }
     const g = await addGoal(ws, title)
     if (!g) {
-      setErr(`Tối đa ${MAX_GOALS_PER_WEEK} mục tiêu. Đóng hoặc bỏ một cái trước.`)
+      setErr(t('week.goal.max', { n: MAX_GOALS_PER_WEEK }))
       return
     }
     setTitle('')
@@ -34,26 +34,26 @@ function GoalSlots({ ws, label, today }: { ws: ISODate; label: string; today: IS
   return (
     <Card>
       <div className="flex items-baseline justify-between">
-        <h2 className="font-semibold">{label}</h2>
-        <Muted>{fmtDateVi(ws)} → {fmtDateVi(addDays(ws, 6))}</Muted>
+        <h2 className="font-display text-xl">{label}</h2>
+        <Muted>{fmtDate(lang, ws)} → {fmtDate(lang, addDays(ws, 6))}</Muted>
       </div>
       <ul className="mt-3 flex flex-col gap-2">
         {Array.from({ length: MAX_GOALS_PER_WEEK }).map((_, i) => {
           const g: WeekGoal | undefined = open[i]
           return (
-            <li key={g?.id ?? `empty-${i}`} className={`rounded-xl border p-3 ${g ? 'border-stone-300' : 'border-dashed border-stone-300 text-stone-400'}`}>
+            <li key={g?.id ?? `empty-${i}`} className={`rounded-xl border p-3 ${g ? 'border-line bg-paper/60' : 'border-dashed border-line text-ink-3'}`}>
               {g ? (
                 <div className="flex items-start justify-between gap-2">
                   <span className="font-medium">{g.title}</span>
                   {isCurrent && (
                     <span className="flex shrink-0 gap-1">
-                      <Button size="sm" variant="secondary" onClick={() => void setGoalStatus(g.id, 'done')}>Xong</Button>
-                      <Button size="sm" variant="ghost" onClick={() => void setGoalStatus(g.id, 'dropped')}>Bỏ</Button>
+                      <Button size="sm" variant="secondary" onClick={() => void setGoalStatus(g.id, 'done')}>{t('common.done')}</Button>
+                      <Button size="sm" variant="ghost" onClick={() => void setGoalStatus(g.id, 'dropped')}>{t('common.drop')}</Button>
                     </span>
                   )}
                 </div>
               ) : (
-                <span>Slot {i + 1} trống</span>
+                <span className="text-sm">{t('week.slotEmpty', { n: i + 1 })}</span>
               )}
             </li>
           )
@@ -62,18 +62,16 @@ function GoalSlots({ ws, label, today }: { ws: ISODate; label: string; today: IS
       {open.length < MAX_GOALS_PER_WEEK && (
         <div className="mt-3">
           <div className="flex gap-2">
-            <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Hoàn thành 3 module đầu khoá S3" onKeyDown={(e) => e.key === 'Enter' && void add()} />
-            <Button onClick={() => void add()}>Thêm</Button>
+            <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t('week.goal.ph')} onKeyDown={(e) => e.key === 'Enter' && void add()} />
+            <Button onClick={() => void add()}>{t('common.add')}</Button>
           </div>
-          {err && <p className="mt-1 text-sm text-rose-700">{err}</p>}
+          {err && <p className="mt-1 text-sm text-bad">{err}</p>}
         </div>
       )}
       {closed.length > 0 && (
         <ul className="mt-3 flex flex-col gap-1">
           {closed.map((g) => (
-            <li key={g.id} className="text-sm text-stone-500">
-              {g.status === 'done' ? '✓' : '×'} {g.title}
-            </li>
+            <li key={g.id} className="text-sm text-ink-3">{g.status === 'done' ? '✓' : '×'} {g.title}</li>
           ))}
         </ul>
       )}
@@ -82,40 +80,32 @@ function GoalSlots({ ws, label, today }: { ws: ISODate; label: string; today: IS
 }
 
 function Review({ ws, today, settings, nowMs }: { ws: ISODate; today: ISODate; settings: Settings; nowMs: number }) {
+  const { t } = useT()
   const sessions = useLiveQuery(() => db.sessions.toArray(), [], [])
   const dayLogs = useLiveQuery(() => db.dayLogs.toArray(), [], [])
   const tasks = useLiveQuery(() => db.tasks.toArray(), [], [])
   const m = computeWeekMetrics({ weekStart: ws, today, sessions, dayLogs, tasks, settings, nowMs })
   const deferTotal = m.deferrals['new-info'] + m.deferrals.urgent + m.deferrals['dont-want']
-
-  const Row = ({ k, v, note }: { k: string; v: string; note?: string }) => (
-    <div className="flex items-baseline justify-between border-b border-stone-100 py-2 last:border-0">
-      <span className="text-stone-700">{k}</span>
-      <span className="text-right">
-        <span className="text-lg font-semibold tabular-nums">{v}</span>
-        {note && <Muted>{note}</Muted>}
-      </span>
-    </div>
-  )
+  const bed = m.bedtimeDeltaMin
 
   return (
     <Card>
-      <h2 className="font-semibold">Review tuần</h2>
-      <Muted>{m.daysCounted} ngày đã qua. Không có streak. Chỉ có số.</Muted>
-      <div className="mt-2">
-        <Row k={`Ngày có ≥${settings.minFocusMin}' việc chính`} v={`${m.daysWithFocus}/${m.daysCounted}`} />
-        <Row k="Việc chính đã đóng" v={String(m.tasksDone)} />
-        <Row k="Đóng ngày đúng giờ" v={`${m.shutdownOnTime}/${m.daysCounted}`} note={`${m.daysClosed} đêm có đóng`} />
-        <Row
-          k="Ngủ so với mục tiêu"
-          v={m.bedtimeDeltaMin === null ? '—' : `${m.bedtimeDeltaMin > 0 ? '+' : ''}${m.bedtimeDeltaMin}'`}
-          note={m.bedtimeDeltaMin === null ? 'chưa có dữ liệu' : m.bedtimeDeltaMin > 0 ? 'muộn hơn' : 'sớm hơn hoặc đúng'}
+      <h2 className="font-display text-xl">{t('week.review')}</h2>
+      <Muted>{t('week.review.hint', { n: m.daysCounted })}</Muted>
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        <Stat label={t('week.m.focus', { n: settings.minFocusMin })} value={`${m.daysWithFocus}/${m.daysCounted}`} />
+        <Stat label={t('week.m.done')} value={String(m.tasksDone)} />
+        <Stat label={t('week.m.shutdown')} value={`${m.shutdownOnTime}/${m.daysCounted}`} note={t('week.m.shutdown.note', { n: m.daysClosed })} />
+        <Stat
+          label={t('week.m.bed')}
+          value={bed === null ? '—' : `${bed > 0 ? '+' : ''}${bed}′`}
+          note={bed === null ? t('week.m.bed.none') : bed > 0 ? t('week.m.bed.late') : t('week.m.bed.ok')}
         />
-        <Row k="Lần quay lại sau ngày trống" v={String(m.returns)} note="càng nhiều càng tốt" />
-        <Row
-          k="Dời / huỷ việc"
-          v={String(deferTotal)}
-          note={deferTotal ? `${m.deferrals['dont-want']} không muốn · ${m.deferrals.urgent} khẩn · ${m.deferrals['new-info']} hết cần` : undefined}
+        <Stat label={t('week.m.returns')} value={String(m.returns)} note={t('week.m.returns.note')} />
+        <Stat
+          label={t('week.m.defer')}
+          value={String(deferTotal)}
+          note={deferTotal ? t('week.m.defer.note', { dw: m.deferrals['dont-want'], ur: m.deferrals.urgent, ni: m.deferrals['new-info'] }) : undefined}
         />
       </div>
     </Card>
@@ -123,19 +113,20 @@ function Review({ ws, today, settings, nowMs }: { ws: ISODate; today: ISODate; s
 }
 
 function LaterItems({ today }: { today: ISODate }) {
+  const { t } = useT()
   const items = useLiveQuery(() => db.parking.where('resolution').equals('later').toArray(), [], [])
   if (items.length === 0) return null
   return (
     <Card>
-      <h2 className="font-semibold">Để cuối tuần ({items.length})</h2>
-      <Muted>Mỗi cái: lên mai làm việc nhỏ, hoặc xoá. Muốn thành việc chính thì đưa vào mục tiêu tuần rồi tạo lúc đóng ngày.</Muted>
+      <h2 className="font-display text-xl">{t('week.later', { n: items.length })}</h2>
+      <Muted>{t('week.later.hint')}</Muted>
       <ul className="mt-3 flex flex-col gap-3">
         {items.map((p) => (
-          <li key={p.id} className="rounded-xl bg-stone-50 p-3">
+          <li key={p.id} className="rounded-xl bg-paper p-3 ring-1 ring-line">
             <p className="mb-2">{p.text}</p>
             <div className="flex gap-2">
-              <Button size="sm" variant="secondary" onClick={() => void resolveParking(p.id, 'tomorrow', today)}>Lên mai</Button>
-              <Button size="sm" variant="danger" onClick={() => void deleteParking(p.id)}>Xoá</Button>
+              <Button size="sm" variant="secondary" onClick={() => void resolveParking(p.id, 'tomorrow', today)}>{t('week.later.tomorrow')}</Button>
+              <Button size="sm" variant="danger" onClick={() => void deleteParking(p.id)}>{t('common.delete')}</Button>
             </div>
           </li>
         ))}
@@ -145,15 +136,16 @@ function LaterItems({ today }: { today: ISODate }) {
 }
 
 export function WeekScreen({ today, settings, now }: { today: ISODate; settings: Settings; now: Date }) {
+  const { t } = useT()
   const ws = weekStart(today)
   const [showPrev, setShowPrev] = useState(false)
   return (
-    <Page title="Tuần" subtitle="Tối đa 2 mục tiêu. Không mở thêm.">
-      <GoalSlots ws={ws} label="Tuần này" today={today} />
+    <Page title={t('week.title')} subtitle={t('week.subtitle')}>
+      <GoalSlots ws={ws} label={t('week.this')} today={today} />
       <Review ws={showPrev ? addDays(ws, -7) : ws} today={today} settings={settings} nowMs={now.getTime()} />
-      <Button variant="ghost" size="sm" onClick={() => setShowPrev((s) => !s)}>{showPrev ? 'Xem tuần này' : 'Xem tuần trước'}</Button>
+      <Button variant="ghost" size="sm" onClick={() => setShowPrev((s) => !s)}>{showPrev ? t('week.cur') : t('week.prev')}</Button>
       <LaterItems today={today} />
-      <GoalSlots ws={addDays(ws, 7)} label="Tuần tới" today={today} />
+      <GoalSlots ws={addDays(ws, 7)} label={t('week.next')} today={today} />
     </Page>
   )
 }

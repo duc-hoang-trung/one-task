@@ -1,30 +1,25 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useState } from 'react'
 import { TaskForm } from '../components/TaskForm'
-import { Button, Card, Field, Input, Muted, Page } from '../components/ui'
-import { closeDay, completeTask, dropTask, rescheduleTask, resolveParking, deleteParking } from '../lib/actions'
+import { Button, Card, Eyebrow, Field, Input, Muted, Page } from '../components/ui'
+import { fmtDate, useT } from '../i18n'
+import { closeDay, completeTask, deleteParking, dropTask, rescheduleTask, resolveParking } from '../lib/actions'
 import { db, mainTaskFor } from '../lib/db'
-import { addDays, fmtDateVi, type ISODate } from '../lib/dates'
+import { addDays, type ISODate } from '../lib/dates'
 import type { Settings, Task } from '../lib/types'
 
 type Outcome = 'done' | 'progress' | 'none'
 
-/**
- * Nghi thức đóng ngày, 5 bước, ~3 phút:
- *  1. Việc chính hôm nay: xong / có tiến triển / không đụng
- *  2. Next Action cho mai (bắt buộc)
- *  3. Quét Parking Lot về 0
- *  4. 1 lo lắng + 1 bước tiếp theo (constructive worry)
- *  5. Đóng ngày → Night mode
- */
+/** Nghi thức đóng ngày, 5 bước, ~3 phút. */
 export function ShutdownScreen({
   today, task, settings, now, onCancel,
 }: { today: ISODate; task?: Task; settings: Settings; now: Date; onCancel: () => void }) {
+  const { t, lang } = useT()
   const tomorrow = addDays(today, 1)
   const [step, setStep] = useState(task ? 1 : 2)
   const [outcome, setOutcome] = useState<Outcome>(task ? 'progress' : 'none')
   const [mode, setMode] = useState<'continue' | 'new'>(task && task.status !== 'done' ? 'continue' : 'new')
-  const [nextAction, setNextAction] = useState('')
+  const [nextAction, setNextAction] = useState(task?.nextAction ?? '')
   const [concern, setConcern] = useState('')
   const [nextStep, setNextStep] = useState('')
 
@@ -41,7 +36,7 @@ export function ShutdownScreen({
   }
 
   async function continueTomorrow() {
-    if (!task || nextAction.trim().length < 5) return
+    if (!task) return
     await rescheduleTask(task.id, tomorrow, nextAction)
     setStep(3)
   }
@@ -50,60 +45,57 @@ export function ShutdownScreen({
     await closeDay({ today, outcome, worry: { concern: concern.trim(), nextStep: nextStep.trim() }, now })
   }
 
-  const Steps = () => (
-    <div className="flex gap-1">
-      {[1, 2, 3, 4, 5].map((i) => (
-        <div key={i} className={`h-1.5 flex-1 rounded-full ${i <= step ? 'bg-stone-900' : 'bg-stone-200'}`} />
-      ))}
-    </div>
-  )
+  const unfinished = task && task.status !== 'done'
 
   return (
-    <Page subtitle={fmtDateVi(today)} title="Đóng ngày">
-      <Steps />
+    <Page subtitle={fmtDate(lang, today)} title={t('sd.title')}>
+      <div className="flex gap-1.5">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <div key={i} className={`h-1 flex-1 rounded-full transition-colors ${i <= step ? 'bg-accent' : 'bg-paper-3'}`} />
+        ))}
+      </div>
 
       {step === 1 && task && (
         <Card>
-          <Muted>1 · Việc chính hôm nay</Muted>
-          <h2 className="mt-1 text-lg font-semibold">{task.title}</h2>
+          <Eyebrow>1 · {t('sd.s1')}</Eyebrow>
+          <h2 className="font-display mt-1.5 text-xl">{task.title}</h2>
           <div className="mt-4 flex flex-col gap-2">
-            <Button onClick={() => void pickOutcome('done')}>Xong rồi</Button>
-            <Button variant="secondary" onClick={() => void pickOutcome('progress')}>Có tiến triển, chưa xong</Button>
-            <Button variant="secondary" onClick={() => void pickOutcome('none')}>Không đụng tới</Button>
+            <Button onClick={() => void pickOutcome('done')}>{t('sd.s1.done')}</Button>
+            <Button variant="secondary" onClick={() => void pickOutcome('progress')}>{t('sd.s1.progress')}</Button>
+            <Button variant="secondary" onClick={() => void pickOutcome('none')}>{t('sd.s1.none')}</Button>
           </div>
         </Card>
       )}
 
       {step === 2 && (
         <Card>
-          <Muted>2 · Việc chính cho mai ({fmtDateVi(tomorrow)})</Muted>
+          <Eyebrow>2 · {t('sd.s2')} · {fmtDate(lang, tomorrow)}</Eyebrow>
           {tomorrowTask ? (
             <>
-              <p className="mt-2 text-lg font-semibold">{tomorrowTask.title}</p>
-              <p className="text-stone-700">Bước đầu: {tomorrowTask.nextAction}</p>
-              <Button className="mt-4 w-full" onClick={() => setStep(3)}>Tiếp</Button>
+              <p className="font-display mt-2 text-xl">{tomorrowTask.title}</p>
+              {tomorrowTask.nextAction && <p className="text-ink-2">{t('sd.s2.first')}: {tomorrowTask.nextAction}</p>}
+              <Button className="mt-4 w-full" onClick={() => setStep(3)}>{t('common.next')}</Button>
             </>
-          ) : mode === 'continue' && task && task.status !== 'done' ? (
+          ) : mode === 'continue' && unfinished ? (
             <div className="mt-2 flex flex-col gap-3">
-              <p className="text-stone-700">Tiếp tục <strong>{task.title}</strong> vào mai.</p>
-              <Field label="Bước đầu tiên khi mở máy sáng mai" hint="Càng cụ thể càng dễ ngủ và càng dễ bắt đầu.">
-                <Input autoFocus value={nextAction} onChange={(e) => setNextAction(e.target.value)} placeholder="Mở file X, làm tiếp từ câu 12" />
+              <p className="text-ink-2">{t('sd.s2.continue', { title: task.title })}</p>
+              <Field label={t('sd.s2.nextAction')} hint={t('sd.s2.nextAction.hint')}>
+                <Input autoFocus value={nextAction} onChange={(e) => setNextAction(e.target.value)} placeholder={t('sd.s2.nextAction.ph')} />
               </Field>
-              <Button disabled={nextAction.trim().length < 5} onClick={() => void continueTomorrow()}>Chốt cho mai</Button>
-              <Button variant="ghost" onClick={() => setMode('new')}>Mai làm việc khác</Button>
+              <Button onClick={() => void continueTomorrow()}>{t('sd.s2.commit')}</Button>
+              <Button variant="ghost" onClick={() => setMode('new')}>{t('sd.s2.other')}</Button>
             </div>
           ) : (
             <div className="mt-2">
-              {task && task.status !== 'done' && (
-                <Muted className="mb-3">Việc "{task.title}" sẽ được bỏ khỏi kế hoạch (ghi lại là đổi việc).</Muted>
-              )}
+              {unfinished && <Muted className="mb-3">{t('sd.s2.dropNote', { title: task.title })}</Muted>}
               <TaskForm
                 scheduledFor={tomorrow}
+                compact
                 onCreated={async () => {
-                  if (task && task.status !== 'done') await dropTask(task.id, 'đổi việc lúc đóng ngày', today)
+                  if (unfinished) await dropTask(task.id, 'switched at shutdown', today)
                   setStep(3)
                 }}
-                onCancel={task && task.status !== 'done' ? () => setMode('continue') : undefined}
+                onCancel={unfinished ? () => setMode('continue') : undefined}
               />
             </div>
           )}
@@ -112,21 +104,21 @@ export function ShutdownScreen({
 
       {step === 3 && (
         <Card>
-          <Muted>3 · Quét Parking Lot ({pending.length})</Muted>
+          <Eyebrow>3 · {t('sd.s3', { n: pending.length })}</Eyebrow>
           {pending.length === 0 ? (
             <>
-              <p className="mt-2 text-stone-700">Sạch. Không còn gì treo trong đầu.</p>
-              <Button className="mt-4 w-full" onClick={() => setStep(4)}>Tiếp</Button>
+              <p className="mt-2 text-ink-2">{t('sd.s3.clean')}</p>
+              <Button className="mt-4 w-full" onClick={() => setStep(4)}>{t('common.next')}</Button>
             </>
           ) : (
             <ul className="mt-3 flex flex-col gap-3">
               {pending.map((p) => (
-                <li key={p.id} className="rounded-xl bg-stone-50 p-3">
+                <li key={p.id} className="rounded-xl bg-paper p-3 ring-1 ring-line">
                   <p className="mb-2">{p.text}</p>
                   <div className="flex flex-wrap gap-2">
-                    <Button size="sm" variant="secondary" onClick={() => void resolveParking(p.id, 'tomorrow', today)}>Lên mai (việc nhỏ)</Button>
-                    <Button size="sm" variant="secondary" onClick={() => void resolveParking(p.id, 'later', today)}>Để cuối tuần</Button>
-                    <Button size="sm" variant="danger" onClick={() => void deleteParking(p.id)}>Xoá</Button>
+                    <Button size="sm" variant="secondary" onClick={() => void resolveParking(p.id, 'tomorrow', today)}>{t('sd.s3.tomorrow')}</Button>
+                    <Button size="sm" variant="secondary" onClick={() => void resolveParking(p.id, 'later', today)}>{t('sd.s3.later')}</Button>
+                    <Button size="sm" variant="danger" onClick={() => void deleteParking(p.id)}>{t('common.delete')}</Button>
                   </div>
                 </li>
               ))}
@@ -137,32 +129,30 @@ export function ShutdownScreen({
 
       {step === 4 && (
         <Card>
-          <Muted>4 · Một điều đang lo, một bước tiếp theo</Muted>
-          <p className="mt-1 text-sm text-stone-600">Viết ra để não không phải giữ. Tối nay nếu nghĩ tới, nhắc mình: đã có kế hoạch.</p>
+          <Eyebrow>4 · {t('sd.s4')}</Eyebrow>
+          <p className="mt-1.5 text-sm text-ink-2">{t('sd.s4.hint')}</p>
           <div className="mt-3 flex flex-col gap-3">
-            <Field label="Đang lo gì?">
-              <Input value={concern} onChange={(e) => setConcern(e.target.value)} placeholder="Sợ không kịp deadline báo cáo thứ 5" />
+            <Field label={t('sd.s4.concern')}>
+              <Input value={concern} onChange={(e) => setConcern(e.target.value)} placeholder={t('sd.s4.concern.ph')} />
             </Field>
-            <Field label="Bước tiếp theo nhỏ nhất?">
-              <Input value={nextStep} onChange={(e) => setNextStep(e.target.value)} placeholder="Sáng mai gửi mail hỏi anh A số liệu" />
+            <Field label={t('sd.s4.step')}>
+              <Input value={nextStep} onChange={(e) => setNextStep(e.target.value)} placeholder={t('sd.s4.step.ph')} />
             </Field>
           </div>
-          <Button className="mt-4 w-full" onClick={() => setStep(5)}>{concern || nextStep ? 'Tiếp' : 'Không có gì, tiếp'}</Button>
+          <Button className="mt-4 w-full" onClick={() => setStep(5)}>{concern || nextStep ? t('common.next') : t('sd.s4.nothing')}</Button>
         </Card>
       )}
 
       {step === 5 && (
         <Card>
-          <Muted>5 · Đóng</Muted>
-          <p className="mt-2 text-lg">Hôm nay đến đây là đủ.</p>
-          <p className="mt-1 text-stone-700">
-            Sau khi đóng, app chỉ còn ô Parking Lot cho tới sáng mai. Giờ ngủ mục tiêu: <strong>{settings.bedtimeTarget}</strong>.
-          </p>
-          <Button size="lg" className="mt-4" onClick={() => void finish()}>Đóng ngày</Button>
+          <Eyebrow>5 · {t('sd.s5')}</Eyebrow>
+          <p className="font-display mt-2 text-2xl">{t('sd.s5.enough')}</p>
+          <p className="mt-2 text-ink-2">{t('sd.s5.hint', { t: settings.bedtimeTarget })}</p>
+          <Button size="lg" className="mt-5" onClick={() => void finish()}>{t('sd.s5.close')}</Button>
         </Card>
       )}
 
-      <Button variant="ghost" onClick={onCancel}>Quay lại, chưa đóng</Button>
+      <Button variant="ghost" onClick={onCancel}>{t('sd.notYet')}</Button>
     </Page>
   )
 }
