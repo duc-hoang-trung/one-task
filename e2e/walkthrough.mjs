@@ -14,7 +14,7 @@ page.on('console', (m) => m.type() === 'error' && !/Failed to load resource/.tes
 const shot = (n) => page.screenshot({ path: `e2e/shots/${n}${dark ? '-dark' : ''}.png`, fullPage: true })
 const go = async (d, t) => { await page.goto(`${BASE}?d=${d}&t=${t}`); await page.waitForTimeout(400) }
 const expectText = async (t) => {
-  try { await page.getByText(t, { exact: false }).first().waitFor({ state: 'visible', timeout: 3000 }) }
+  try { await page.getByText(t, { exact: false }).filter({ visible: true }).first().waitFor({ state: 'visible', timeout: 3000 }) }
   catch { await page.screenshot({ path: 'e2e/shots/FAIL.png', fullPage: true }); console.log(await page.locator('body').innerText()); throw new Error(`Không thấy: ${t}`) }
 }
 
@@ -127,17 +127,22 @@ await expectText('Đi siêu thị')
 await expectText('0/3 xong')
 await shot('11b-today-list')
 
-// 11. Week screen
-await page.getByRole('button', { name: 'Tuần' }).click()
+// 11. Goals: week goal + quarter goal + check-in + review
+await page.getByRole('button', { name: 'Mục tiêu' }).click()
 await expectText('Nhìn lại tuần')
-await page.getByPlaceholder(/Hoàn thành 3 module/).first().fill('Hoàn thành 3 module đầu khoá SAA')
-await page.getByRole('button', { name: 'Thêm' }).first().click()
+await page.getByPlaceholder('Đổi việc trước tháng 12').fill('Đổi việc trước tháng 12')
+await page.getByPlaceholder('Đổi việc trước tháng 12').press('Enter')
 await page.waitForTimeout(400)
-await page.getByPlaceholder(/Hoàn thành 3 module/).first().fill('Nộp 2 CV')
-await page.getByRole('button', { name: 'Thêm' }).first().click()
+await page.getByPlaceholder('Nộp 2 CV').fill('Nộp 2 CV')
+await page.getByPlaceholder('Nộp 2 CV').press('Enter')
 await page.waitForTimeout(400)
-await expectText('Nộp 2 CV')
-await shot('12-week')
+await expectText('Đổi việc trước tháng 12')
+await page.getByRole('button', { name: /Check-in|Đến lúc check-in/ }).first().click()
+await page.getByRole('button', { name: 'Chậm' }).click()
+await page.getByPlaceholder(/Một dòng/).fill('mới nộp 1')
+await page.getByRole('button', { name: 'Ghi check-in' }).click()
+await expectText('mới nộp 1')
+await shot('12-goals')
 
 // 11a. Plan: matrix quick add to backlog, inbox → Q, drag to Today, week board
 await page.getByRole('button', { name: 'Kế hoạch' }).click()

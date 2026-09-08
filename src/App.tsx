@@ -17,7 +17,7 @@ import { PlanScreen } from './screens/PlanScreen'
 import { SettingsScreen } from './screens/SettingsScreen'
 import { ShutdownScreen } from './screens/ShutdownScreen'
 import { TodayScreen } from './screens/TodayScreen'
-import { WeekScreen } from './screens/WeekScreen'
+import { GoalsScreen } from './screens/GoalsScreen'
 
 type View = 'main' | 'plan' | 'calendar' | 'week' | 'settings'
 
@@ -68,7 +68,7 @@ function Shell({ settings }: { settings: Settings }) {
   } else if (view === 'plan') {
     screen = <PlanScreen today={today} settings={settings} />
   } else if (view === 'week') {
-    screen = <WeekScreen today={today} settings={settings} now={now} />
+    screen = <GoalsScreen today={today} settings={settings} now={now} />
   } else if (view === 'settings') {
     screen = <SettingsScreen settings={settings} />
   } else if (phase === 'morning') {
@@ -104,7 +104,7 @@ function Shell({ settings }: { settings: Settings }) {
           <Tab v="main" label={t('nav.today')} icon={<Sun size={20} strokeWidth={1.75} />} />
           <Tab v="plan" label={t('nav.plan')} icon={<LayoutGrid size={20} strokeWidth={1.75} />} />
           <Tab v="calendar" label={t('nav.calendar')} icon={<CalendarDays size={20} strokeWidth={1.75} />} />
-          <Tab v="week" label={t('nav.week')} icon={<Target size={20} strokeWidth={1.75} />} />
+          <Tab v="week" label={t('nav.goals')} icon={<Target size={20} strokeWidth={1.75} />} />
           <Tab v="settings" label={t('nav.settings')} icon={<SettingsIcon size={20} strokeWidth={1.75} />} />
         </div>
       </nav>

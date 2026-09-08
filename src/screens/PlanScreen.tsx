@@ -52,7 +52,8 @@ function MatrixView({ today, settings, onEdit }: { today: ISODate; settings: Set
   const { t } = useT()
   const [area, setArea] = useState<AreaFilter>('all')
   const backlog = useLiveQuery(() => backlogTasks(), [], [])
-  const inbox = useLiveQuery(() => db.parking.filter((p) => !p.deleted && p.resolution === undefined).toArray(), [], [])
+  // Inbox = ý chưa xử lý + ý 'để cuối tuần' chưa thành việc
+  const inbox = useLiveQuery(() => db.parking.filter((p) => !p.deleted && !p.promotedTaskId && (p.resolution === undefined || p.resolution === 'later')).toArray(), [], [])
   const visible = backlog.filter((x) => area === 'all' || x.area === area)
   const byQ = (q: Quadrant | undefined) => visible.filter((x) => x.quadrant === q)
   const tomorrow = addDays(today, 1)
@@ -92,7 +93,7 @@ function MatrixView({ today, settings, onEdit }: { today: ISODate; settings: Set
           {items.map((x) => (
             <li key={x.id}>
               <DragItem id={`task:${x.id}`}>
-                <TaskRow task={x} today={today} onEdit={onEdit} showStar={false} compact />
+                <TaskRow task={x} today={today} onEdit={onEdit} showStar={false} dense />
               </DragItem>
             </li>
           ))}

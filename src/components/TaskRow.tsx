@@ -11,7 +11,7 @@ import { QuadrantChip } from './QuadrantChip'
  * Không kéo thả ở đây; bọc ngoài bằng SortableItem nếu cần.
  */
 export function TaskRow({
-  task, today, minutes = 0, onFocus, onEdit, showStar = true, compact = false, readOnly = false,
+  task, today, minutes = 0, onFocus, onEdit, showStar = true, compact = false, readOnly = false, dense = false,
 }: {
   task: Task
   today: ISODate
@@ -21,13 +21,15 @@ export function TaskRow({
   showStar?: boolean
   compact?: boolean
   readOnly?: boolean
+  /** Ô hẹp (ma trận): ẩn chip, tiêu đề xuống dòng, nút nhỏ. */
+  dense?: boolean
 }) {
   const { t } = useT()
   const [menu, setMenu] = useState(false)
   const done = task.status === 'done'
 
   return (
-    <div className={`group relative flex items-center gap-2.5 rounded-xl px-2 py-2 ${done ? 'opacity-60' : ''} ${compact ? '' : 'bg-paper/60 ring-1 ring-line'}`}>
+    <div className={`group relative flex items-center rounded-xl ${dense ? 'gap-1.5 bg-paper/80 px-1.5 py-1.5 ring-1 ring-line' : 'gap-2.5 px-2 py-2'} ${done ? 'opacity-60' : ''} ${compact || dense ? '' : 'bg-paper/60 ring-1 ring-line'}`}>
       <button
         aria-label={done ? t('row.undo') : t('common.done')}
         disabled={readOnly}
@@ -38,13 +40,13 @@ export function TaskRow({
       </button>
 
       <button className="min-w-0 flex-1 text-left" onClick={() => onEdit?.(task)} disabled={readOnly && !onEdit}>
-        <span className={`block truncate text-[15px] ${done ? 'line-through' : ''}`}>{task.title}</span>
+        <span className={`block ${dense ? 'line-clamp-2 text-[13px] leading-snug' : 'truncate text-[15px]'} ${done ? 'line-through' : ''}`}>{task.title}</span>
         {(task.nextAction || task.startAt) && !compact && (
           <span className="block truncate text-[12px] text-ink-3">{task.startAt ? `${task.startAt} · ` : ''}{task.nextAction}</span>
         )}
       </button>
 
-      <QuadrantChip q={task.quadrant} />
+      {!dense && <QuadrantChip q={task.quadrant} />}
       {minutes > 0 && <span className="shrink-0 text-[12px] tabular-nums text-ink-3">{minutes}′</span>}
       {task.isMain && showStar && <Star size={14} className="shrink-0 fill-accent text-accent" />}
 
