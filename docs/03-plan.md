@@ -1,7 +1,7 @@
 # 03 · Plan phát triển web app "Một Việc"
 
-> **Trạng thái (2026-09-08):** M0–M4 xong (v0.1), rồi v0.2 theo yêu cầu review: UI mới, vi/en, form mềm,
-> nghỉ tích hợp, lịch tháng, Supabase sync tuỳ chọn. 65 test pass, e2e walkthrough pass, deploy Pages xanh.
+> **Trạng thái (2026-09-08):** v0.1 (M0–M4) → v0.2 (UI, vi/en, form mềm, nghỉ, lịch, Supabase) → **v0.3: đổi hướng thành hệ quản lý cá nhân**
+> (nhiều việc/ngày, ma trận Eisenhower, kéo thả, mục tiêu tuần/quý/năm, thống kê, thông báo). 79 test pass, e2e pass, deploy Pages xanh.
 > Việc còn lại của MVP là **dùng thật 4 tuần** và đo (mục "Cột mốc đánh giá"). Khác biệt so với plan gốc: mục 8.
 
 > Plan này tự áp dụng chính các rule của app: mỗi milestone là **1 việc chính**, có **Definition of Done** kiểm được,
@@ -171,3 +171,21 @@ Push notification giờ Shutdown · AI concretizer · Sync Supabase · Body-doub
 | Cloud DB free | Cần nếu dùng 2 máy hoặc sợ mất dữ liệu. | Supabase free + magic link, local-first + outbox + LWW. Không cấu hình thì app vẫn chạy thuần local. |
 
 Việc user cần làm để bật sync: xem README mục "Đồng bộ cloud".
+
+## 11. v0.3 (2026-09-08) — đổi hướng sản phẩm theo quyết định của user
+
+**Lý do:** sau khi dùng thử, user xác định nhu cầu là quản lý toàn bộ đầu việc trong ngày, lịch sử theo tháng, mục tiêu tuần/quý/năm có follow-up, thống kê để tự chỉnh đốn, tách Cá nhân / Công việc, có kéo thả. Tôi đã nêu rủi ro (công cụ lập kế hoạch dễ thành nơi trì hoãn); user giữ quyết định. Cơ chế chống trì hoãn của v0.1 được giữ như một lớp: ★ MIT tuỳ chọn mỗi ngày, timer 10′, hậu quả, huỷ có ma sát, đóng ngày, night mode.
+
+| Việc | Đã làm |
+|---|---|
+| Data model v4 | Task: area, quadrant, isMain (≤1/ngày), order, scheduledFor tuỳ chọn (Backlog), startAt. Goal: horizon + periodKey + parentId + checkins. Migration tự động. |
+| Hôm nay | Danh sách không giới hạn theo khu vực, kéo thả sắp thứ tự, ▶ theo việc, thêm nhanh có token, MIT card giữ nguyên. |
+| Kế hoạch | Ma trận Eisenhower cho Backlog + Inbox Parking Lot + Tuần 7 ngày, kéo thả bằng dnd-kit. |
+| Lịch | Xong/tổng theo ngày, chi tiết ngày, thống kê tháng lọc khu vực, biểu đồ cột. Bỏ giới hạn 14 ngày. |
+| Mục tiêu | Tuần ▸ Quý ▸ Năm, check-in 3 trạng thái + ghi chú, review tuần chuyển sang đây. |
+| Đóng ngày | Rà mọi việc treo (bắt buộc xử lý), chốt mai, Parking Lot thành việc. |
+| Thông báo | Âm, rung, Notification API; hết giờ, hết nghỉ, giờ đóng ngày, giờ bắt đầu việc. |
+
+**Không làm (cố ý):** timeline theo giờ trong ngày, kéo thả sắp thứ tự trong Parking Lot, streak, push notification từ server.
+
+**Đo sau 4 tuần** (ở tab Lịch và Mục tiêu): tỉ lệ việc xong / tổng theo tháng, số ngày có ★ xong, số lần quay lại sau ngày trống, số check-in mục tiêu. Nếu Backlog lớn dần và ★ xong ít dần, đó là dấu hiệu app đang thành nơi xếp việc: quay về dùng đúng nghi thức sáng/tối.

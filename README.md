@@ -1,29 +1,34 @@
 # Một Việc · One Task
 
-Web app cá nhân chống trì hoãn: **một việc chính mỗi ngày, đóng ngày đúng giờ, quay lại khi trượt**.
-Local-first, cài được lên điện thoại (PWA), tiếng Việt / English, đồng bộ cloud tuỳ chọn qua Supabase free.
+Hệ quản lý cá nhân local-first: **mọi đầu việc trong ngày (Công việc / Cá nhân), Backlog theo ma trận Eisenhower, mục tiêu tuần / quý / năm có check-in, lịch và thống kê tháng**.
+Bên trong vẫn giữ lớp chống trì hoãn của bản đầu: mỗi ngày có thể gắn ★ một **việc quan trọng nhất (MIT)** với timer 10 phút, câu hậu quả tự viết, huỷ có ma sát; **đóng ngày** 5 bước và **night mode** khoá tới sáng.
+PWA cài lên điện thoại, tiếng Việt / English, đồng bộ cloud tuỳ chọn qua Supabase free.
 
 Tài liệu: [01 · nghiên cứu](docs/01-research.md) · [02 · brainstorm](docs/02-brainstorm.md) · [03 · plan](docs/03-plan.md) · [parking lot của dự án](docs/parking-lot.md)
 
-| Sáng | Trong ngày | Gợi ý nghỉ | Night mode |
+| Hôm nay | Kế hoạch · Ma trận | Kế hoạch · Tuần | Mục tiêu |
 |---|---|---|---|
-| ![](docs/screenshots/03-morning.png) | ![](docs/screenshots/06-today-timer.png) | ![](docs/screenshots/06b-break-suggested.png) | ![](docs/screenshots/10-night.png) |
+| ![](docs/screenshots/11b-today-list.png) | ![](docs/screenshots/16-plan-matrix.png) | ![](docs/screenshots/17-plan-week.png) | ![](docs/screenshots/12-goals.png) |
 
-| Lịch (nhìn lại) | Lịch (đặt việc) | Tuần | Dark mode |
+| Lịch + thống kê | Sáng (MIT) | Đóng ngày | Night mode (dark) |
 |---|---|---|---|
-| ![](docs/screenshots/14-calendar-past.png) | ![](docs/screenshots/15-calendar-planned.png) | ![](docs/screenshots/12-week.png) | ![](docs/screenshots/06-today-timer-dark.png) |
+| ![](docs/screenshots/15-calendar-planned.png) | ![](docs/screenshots/03-morning.png) | ![](docs/screenshots/08-shutdown-step2.png) | ![](docs/screenshots/10-night-dark.png) |
 
-## Vòng đời một ngày
+## Năm tab
 
-1. **Sáng**: đúng 1 dòng *bước đầu tiên*, hỏi "hôm qua ngủ lúc mấy giờ". Hai nút: **Bắt đầu 10 phút** hoặc **Huỷ…**. Không list.
-2. **Trong ngày**: một việc chính, timer đếm ngược. Hết 10 phút app hỏi "thêm 15?" chứ không hỏi "xong chưa?". Tập trung liền 25 phút thì gợi ý **nghỉ 5 phút** (không bắt buộc, phút nghỉ không tính vào phút làm). Ý tưởng xen vào → **Parking Lot**, Enter, quay lại. Không có nút Hoãn.
-3. **Huỷ…**: nếu bạn đã viết *hậu quả*, app hiện lại đúng câu đó và bắt đọc 5 giây, rồi chọn lý do. "Không muốn làm" chỉ có một nút: *Làm 10 phút rồi quyết*.
-4. **Đóng ngày** (mặc định 21:00): 5 bước. Việc hôm nay xong chưa → việc chính cho mai → quét Parking Lot về 0 → 1 lo lắng + 1 bước tiếp theo → Đóng.
-5. **Night mode**: khoá tới 04:00. Không tạo, không sửa, không xem list. Chỉ còn ô Parking Lot và "Đã có kế hoạch. Sáng mai lúc 07:30: …".
-6. **Lịch**: quá khứ chỉ đọc (ô tô màu theo có làm, chấm xanh đóng ngày đúng giờ, chấm đỏ ngủ muộn). Tương lai tối đa **14 ngày**: đặt đúng một việc chính cho ngày đó. Xa hơn: app bảo ghi vào Parking Lot.
-7. **Tuần**: tối đa 2 mục tiêu. Review: ngày có ≥10′ việc chính, đóng ngày đúng giờ, ngủ so với mục tiêu, **số lần quay lại sau ngày trống** (không có streak), số lần dời việc.
+1. **Hôm nay**: MIT (nếu có) với timer đếm ngược, DoD, hậu quả, Huỷ…; danh sách việc trong ngày nhóm Công việc / Cá nhân, kéo thả sắp thứ tự, ▶ tập trung cho bất kỳ việc nào, thêm nhanh `Trả lời mail #w !3 ~20`, thanh tiến độ, Parking Lot ghi nhanh. Hết 10 phút app hỏi "thêm 15?"; tập trung liền 25 phút thì gợi ý nghỉ 5.
+2. **Kế hoạch**: *Ma trận* Eisenhower cho Backlog (kéo giữa 4 ô, kéo vào "Hôm nay"/"Mai" để lên lịch), *Inbox* từ Parking Lot (kéo vào ô hoặc chạm Q1–Q4 để thành việc), bộ lọc khu vực, nhắc khi Backlog quá 30. *Tuần*: 7 ngày xếp dọc, kéo việc giữa ngày hoặc về Backlog.
+3. **Lịch**: ô ngày hiện xong/tổng, xong hết tô đậm, chấm xanh đóng ngày đúng giờ, chấm đỏ ngủ muộn. Chạm ngày quá khứ xem việc + phút tập trung + giờ đóng + giờ ngủ; ngày tới thêm việc ngay. Bên dưới: thống kê tháng (lọc khu vực) và biểu đồ cột việc xong mỗi ngày.
+4. **Mục tiêu**: Tuần ▸ Quý ▸ Năm, gắn mục tiêu con vào mục tiêu cha, đếm việc gắn, **check-in** đúng hướng / chậm / kẹt kèm một dòng ghi chú, nhắc khi quá hạn check-in hoặc quá 3 mục tiêu tuần. Review tuần: việc xong / tổng, ngày có ≥10′ MIT, đóng ngày đúng giờ, ngủ so mục tiêu, số lần quay lại sau ngày trống, số lần dời việc.
+5. **Cài đặt**: giờ đóng ngày / ngủ / sáng, phút khởi động và gia hạn, ngưỡng nghỉ, khu vực mặc định, thông báo (âm, rung, hệ thống), ngôn ngữ, tài khoản & đồng bộ, xuất JSON.
 
-Tạo việc chỉ cần **tên việc**. Bước đầu tiên, khi nào gọi là xong, hậu quả, ước lượng đều tuỳ chọn, chỉ có gợi ý ngắn. Tên mơ hồ ("Học AWS") được gợi ý nhẹ, không bị chặn.
+## Nghi thức ngày
+
+- **Sáng**: nếu có MIT, một dòng *bước đầu tiên* + "Bắt đầu 10 phút" hoặc "Huỷ…" (đọc lại hậu quả 5 giây). Nếu chưa: danh sách hôm nay để gắn ★ rồi "Vào ngày". Hỏi giờ ngủ hôm qua.
+- **Đóng ngày** (mặc định 21:00, có thông báo): (1) rà mọi việc chưa xong: xong / sang mai / về Backlog / bỏ, không được để treo; (2) chốt danh sách mai, gắn ★, gợi ý từ Backlog Q1–Q2; (3) Parking Lot về 0: thành việc hoặc xoá; (4) một lo lắng + một bước tiếp theo; (5) đóng.
+- **Night mode**: khoá tới 04:00, chỉ còn ô Parking Lot và tóm tắt ngày mai.
+
+Thông báo (âm ngắn, rung, Notification API qua service worker) khi hết giờ hẹn, hết nghỉ, đến giờ đóng ngày, đến giờ bắt đầu một việc. Chỉ khi app đang mở hoặc chạy nền; không có server push.
 
 ## Chạy
 
@@ -72,25 +77,26 @@ Cách sync hoạt động: mọi ghi vào IndexedDB đều đặt `updatedAt` v�
 
 ## Stack
 
-Vite 8 · React 19 · TypeScript · Tailwind 4 (token giấy/mực, dark theo hệ) · Dexie 4 (IndexedDB) · lucide-react · @supabase/supabase-js · vite-plugin-pwa · Vitest · Playwright.
+Vite 8 · React 19 · TypeScript · Tailwind 4 (token giấy/mực, dark theo hệ) · Dexie 4 (IndexedDB) · @dnd-kit · lucide-react · @supabase/supabase-js · vite-plugin-pwa · Vitest · Playwright.
 
 ```
 src/
   i18n/       vi.ts, en.ts, index.ts (t(), fmtDate)
-  lib/        dates, clock (giờ giả lập), phase, vagueness (gợi ý mềm), calendar, metrics,
-              db (Dexie v3 + put/patch/softDelete + outbox), actions + *.test.ts
+  lib/        dates, clock (giờ giả lập), phase, period (tuần/quý/năm), quickAdd, calendar, metrics,
+              notify (âm/rung/Notification), vagueness (gợi ý mềm),
+              db (Dexie v4 + put/patch/softDelete + outbox), actions + *.test.ts
   sync/       remote (interface + MemoryRemote), engine (push/pull/LWW), supabase (adapter), index (auth + lịch sync)
-  components/ ui, TaskForm, CancelFlow, FocusTimer, ParkingLot, AccountCard
-  screens/    Morning, Today, Shutdown, Night, Calendar, Week, Settings
-  App.tsx     state machine theo ngày logic + nav
+  components/ ui, dnd/ (SortableList, DragBoard), TaskRow, TaskSheet, QuickAdd, QuadrantChip, TaskForm, CancelFlow, FocusTimer, ParkingLot, AccountCard
+  screens/    Morning, Today, Plan, Calendar, Goals, Shutdown, Night, Settings
+  App.tsx     state machine theo ngày logic + nav + nhắc giờ
 supabase/migrations/0001_records.sql
 ```
 
-## Nguyên tắc sản phẩm
+## Nguyên tắc sản phẩm (v0.3)
 
-1. Một màn hình, một việc, một nút.
-2. Kế hoạch ra buổi tối, sáng chỉ thực thi.
-3. Khoá thay cho nhắc.
-4. Ma sát đúng chỗ: dễ khi bắt đầu, khó khi trốn, không thể sau khi đóng ngày.
-5. Đo lần quay lại, không đo chuỗi.
-6. Nếu một tính năng làm bạn mở app lâu hơn, nó sai.
+1. Một ★ mỗi ngày là tuỳ chọn nhưng được khuyến khích; mọi số liệu "chống trì hoãn" đo trên ★.
+2. Sắp việc ở tab Kế hoạch và lúc Đóng ngày, không phải lúc đang làm.
+3. Khoá thay cho nhắc: sau Đóng ngày không mở việc mới.
+4. Ma sát đúng chỗ: dễ khi bắt đầu, khó khi trốn (hậu quả tự viết), không để việc treo qua đêm.
+5. Đo lần quay lại, không đo chuỗi. Không streak.
+6. Backlog quá 30, mục tiêu tuần quá 3 → app nhắc dọn, không chặn.
