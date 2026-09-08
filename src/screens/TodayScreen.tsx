@@ -29,9 +29,9 @@ export function TodayScreen({
   const sessions = useLiveQuery(() => db.sessions.where('date').equals(today).toArray(), [today], [])
   const focusMin = focusMinutesByDate(sessions, now.getTime()).get(today) ?? 0
   const streak = focusStreakMin(sessions, now.getTime())
-  const smallTasks = useLiveQuery(() => db.parking.where('forDate').equals(today).toArray(), [today], [])
+  const smallTasks = useLiveQuery(() => db.parking.where('forDate').equals(today).filter((p) => !p.deleted).toArray(), [today], [])
   const doneToday = useLiveQuery(
-    () => db.tasks.where('scheduledFor').equals(today).filter((x) => x.status === 'done').toArray(), [today], [],
+    () => db.tasks.where('scheduledFor').equals(today).filter((x) => !x.deleted && x.status === 'done').toArray(), [today], [],
   )
   const due = isShutdownDue(now, settings.shutdownTime)
   const unlockedSmall = focusMin >= settings.minFocusMin || doneToday.length > 0

@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { Button, Card, Field, Input, Muted, Page, Select } from '../components/ui'
+import { AccountCard } from '../components/AccountCard'
 import { useT } from '../i18n'
 import { wipeAll } from '../lib/actions'
 import { isClockOverridden } from '../lib/clock'
-import { db, exportAll } from '../lib/db'
+import { exportAll, put } from '../lib/db'
 import type { LangSetting, Settings } from '../lib/types'
 
 export function SettingsScreen({ settings, onboarding = false, onDone }: { settings: Settings; onboarding?: boolean; onDone?: () => void }) {
@@ -13,7 +14,7 @@ export function SettingsScreen({ settings, onboarding = false, onDone }: { setti
   const [confirmWipe, setConfirmWipe] = useState(false)
 
   async function save() {
-    await db.settings.put({ ...s, onboarded: true })
+    await put('settings', { ...s, onboarded: true })
     setSaved(true)
     setTimeout(() => setSaved(false), 1200)
     onDone?.()
@@ -34,7 +35,7 @@ export function SettingsScreen({ settings, onboarding = false, onDone }: { setti
   async function setLang(lang: LangSetting) {
     const next = { ...s, lang }
     setS(next)
-    await db.settings.put({ ...next, onboarded: settings.onboarded })
+    await put('settings', { ...next, onboarded: settings.onboarded })
   }
 
   return (
@@ -82,6 +83,7 @@ export function SettingsScreen({ settings, onboarding = false, onDone }: { setti
 
       {!onboarding && (
         <>
+          <AccountCard />
           <Card>
             <h2 className="font-display text-xl">{t('set.data')}</h2>
             <Muted>{t('set.data.hint')}</Muted>

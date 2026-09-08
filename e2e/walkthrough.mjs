@@ -148,6 +148,7 @@ await expectText('Quá xa để chốt')
 // 12. Settings
 await page.getByRole('button', { name: 'Cài đặt' }).click()
 await expectText('Giờ đóng ngày')
+await expectText('Chưa cấu hình Supabase')
 await shot('13-settings')
 
 console.log(errors.length ? `ERRORS:\n${errors.join('\n')}` : 'E2E OK, no console errors')

@@ -24,7 +24,7 @@ export function ShutdownScreen({
   const [nextStep, setNextStep] = useState('')
 
   const tomorrowTask = useLiveQuery(() => mainTaskFor(tomorrow), [tomorrow])
-  const pending = useLiveQuery(() => db.parking.filter((p) => p.resolution === undefined).toArray(), [], [])
+  const pending = useLiveQuery(() => db.parking.filter((p) => !p.deleted && p.resolution === undefined).toArray(), [], [])
 
   async function pickOutcome(o: Outcome) {
     setOutcome(o)

@@ -22,7 +22,7 @@ export function TaskForm({
 }) {
   const { t } = useT()
   const goals = useLiveQuery(
-    () => db.goals.where('weekStart').equals(weekStart(scheduledFor)).filter((g) => g.status === 'open').toArray(),
+    () => db.goals.where('weekStart').equals(weekStart(scheduledFor)).filter((g) => !g.deleted && g.status === 'open').toArray(),
     [scheduledFor], [],
   )
   const [title, setTitle] = useState('')

@@ -24,7 +24,7 @@ export function CalendarScreen({ today, settings, now, onGoToday }: { today: ISO
 
   const sessions = useLiveQuery(() => db.sessions.where('date').between(from, to, true, true).toArray(), [from, to], [])
   const dayLogs = useLiveQuery(() => db.dayLogs.where('date').between(from, to, true, true).toArray(), [from, to], [])
-  const tasks = useLiveQuery(() => db.tasks.where('scheduledFor').between(from, to, true, true).toArray(), [from, to], [])
+  const tasks = useLiveQuery(() => db.tasks.where('scheduledFor').between(from, to, true, true).filter((x) => !x.deleted).toArray(), [from, to], [])
 
   const focus = focusMinutesByDate(sessions, now.getTime())
   const logOf = (d: ISODate) => dayLogs.find((l) => l.date === d)

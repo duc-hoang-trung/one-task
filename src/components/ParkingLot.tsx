@@ -13,7 +13,7 @@ export function ParkingLot({ today, dark = false }: { today: ISODate; dark?: boo
   const { t } = useT()
   const [text, setText] = useState('')
   const [flash, setFlash] = useState(false)
-  const pending = useLiveQuery(() => db.parking.filter((p) => p.resolution === undefined).count(), [], 0)
+  const pending = useLiveQuery(() => db.parking.filter((p) => !p.deleted && p.resolution === undefined).count(), [], 0)
 
   async function submit() {
     if (!text.trim()) return

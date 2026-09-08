@@ -23,6 +23,22 @@ export const vi = {
   'onb.intro': 'Một việc chính mỗi ngày. Sáng 1 phút: bắt đầu. Tối 3 phút: đóng ngày. Sau đó khoá tới sáng.',
   'onb.start': 'Bắt đầu',
 
+  // account / sync
+  'acc.title': 'Tài khoản & đồng bộ',
+  'acc.off': 'Chưa cấu hình Supabase. App chạy hoàn toàn trên máy này. Xem README để bật đồng bộ.',
+  'acc.why': 'Đăng nhập để dữ liệu lên cloud (Supabase) và dùng được trên nhiều máy. Không mật khẩu: nhập email, bấm link trong mail.',
+  'acc.email': 'Email',
+  'acc.sendLink': 'Gửi link đăng nhập',
+  'acc.sent': 'Đã gửi link tới {email}. Mở mail trên máy này và bấm link.',
+  'acc.signedInAs': 'Đang đăng nhập:',
+  'acc.lastSync': 'Đã đồng bộ lúc {t}',
+  'acc.pending': '{n} thay đổi chờ đẩy',
+  'acc.syncNow': 'Đồng bộ ngay',
+  'acc.signOut': 'Đăng xuất',
+  'acc.status.syncing': 'Đang đồng bộ…',
+  'acc.status.offline': 'Offline. {n} thay đổi sẽ đẩy khi có mạng.',
+  'acc.status.error': 'Lỗi đồng bộ:',
+
   // settings
   'set.title': 'Cài đặt',
   'set.lang': 'Ngôn ngữ',

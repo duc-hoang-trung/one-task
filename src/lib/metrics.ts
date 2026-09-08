@@ -32,18 +32,23 @@ export function focusStreakMin(sessionsToday: Session[], nowMs: number): number 
       streak = 0
       continue
     }
-    streak += Math.max(0, Math.round(((s.endedAt ?? nowMs) - s.startedAt) / 60_000))
+    streak += sessionMinutes(s, nowMs)
   }
   return streak
+}
+
+/** Phiên quên tắt không được tính vô hạn: trần = plannedMin + FORGOT_GRACE_MIN. */
+export const FORGOT_GRACE_MIN = 30
+export function sessionMinutes(s: Session, nowMs: number): number {
+  const raw = Math.max(0, Math.round(((s.endedAt ?? nowMs) - s.startedAt) / 60_000))
+  return Math.min(raw, s.plannedMin + FORGOT_GRACE_MIN)
 }
 
 export function focusMinutesByDate(sessions: Session[], nowMs: number): Map<ISODate, number> {
   const m = new Map<ISODate, number>()
   for (const s of sessions) {
     if (s.kind === 'break') continue
-    const end = s.endedAt ?? nowMs
-    const min = Math.max(0, Math.round((end - s.startedAt) / 60_000))
-    m.set(s.date, (m.get(s.date) ?? 0) + min)
+    m.set(s.date, (m.get(s.date) ?? 0) + sessionMinutes(s, nowMs))
   }
   return m
 }

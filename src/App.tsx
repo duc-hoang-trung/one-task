@@ -11,6 +11,7 @@ import { computePhase } from './lib/phase'
 import { DEFAULT_SETTINGS, type Settings } from './lib/types'
 import { CalendarScreen } from './screens/CalendarScreen'
 import { MorningScreen } from './screens/MorningScreen'
+import { initSync } from './sync'
 import { NightScreen } from './screens/NightScreen'
 import { SettingsScreen } from './screens/SettingsScreen'
 import { ShutdownScreen } from './screens/ShutdownScreen'
@@ -20,6 +21,7 @@ import { WeekScreen } from './screens/WeekScreen'
 type View = 'main' | 'calendar' | 'week' | 'settings'
 
 export default function App() {
+  useEffect(() => initSync(), [])
   // Chỉ đọc trong liveQuery (transaction read-only); merge default ở ngoài.
   const stored = useLiveQuery(() => db.settings.get('default'), [], null)
   const settings: Settings | undefined = stored === null ? undefined : { ...DEFAULT_SETTINGS, ...stored }

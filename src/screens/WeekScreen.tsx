@@ -10,7 +10,7 @@ import type { Settings, WeekGoal } from '../lib/types'
 
 function GoalSlots({ ws, label, today }: { ws: ISODate; label: string; today: ISODate }) {
   const { t, lang } = useT()
-  const goals = useLiveQuery(() => db.goals.where('weekStart').equals(ws).toArray(), [ws], [])
+  const goals = useLiveQuery(() => db.goals.where('weekStart').equals(ws).filter((g) => !g.deleted).toArray(), [ws], [])
   const open = goals.filter((g) => g.status === 'open')
   const closed = goals.filter((g) => g.status !== 'open')
   const [title, setTitle] = useState('')
@@ -114,7 +114,7 @@ function Review({ ws, today, settings, nowMs }: { ws: ISODate; today: ISODate; s
 
 function LaterItems({ today }: { today: ISODate }) {
   const { t } = useT()
-  const items = useLiveQuery(() => db.parking.where('resolution').equals('later').toArray(), [], [])
+  const items = useLiveQuery(() => db.parking.where('resolution').equals('later').filter((p) => !p.deleted).toArray(), [], [])
   if (items.length === 0) return null
   return (
     <Card>

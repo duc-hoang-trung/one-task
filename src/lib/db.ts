@@ -2,6 +2,18 @@ import Dexie, { type EntityTable } from 'dexie'
 import type { DayLog, ParkingItem, Session, Settings, Task, WeekGoal } from './types'
 import { DEFAULT_SETTINGS } from './types'
 import type { ISODate } from './dates'
+import { now } from './clock'
+
+export type SyncTable = 'goals' | 'tasks' | 'sessions' | 'parking' | 'dayLogs' | 'settings'
+export const SYNC_TABLES: SyncTable[] = ['goals', 'tasks', 'sessions', 'parking', 'dayLogs', 'settings']
+
+/** Hàng chờ đẩy lên cloud. id = `${table}:${rowId}` để ghi nhiều lần chỉ giữ 1 dòng. */
+export interface OutboxRow {
+  id: string
+  table: SyncTable
+  rowId: string
+  updatedAt: number
+}
 
 export class MotViecDB extends Dexie {
   goals!: EntityTable<WeekGoal, 'id'>
@@ -10,6 +22,7 @@ export class MotViecDB extends Dexie {
   parking!: EntityTable<ParkingItem, 'id'>
   dayLogs!: EntityTable<DayLog, 'date'>
   settings!: EntityTable<Settings, 'id'>
+  outbox!: EntityTable<OutboxRow, 'id'>
 
   constructor(name = 'motviec') {
     super(name)
@@ -25,6 +38,15 @@ export class MotViecDB extends Dexie {
     this.version(2)
       .stores({ sessions: 'id, taskId, date, startedAt, kind' })
       .upgrade((tx) => tx.table('sessions').toCollection().modify((s) => { s.kind ??= 'focus' }))
+    // v3: updatedAt cho mọi bảng + outbox để đồng bộ cloud
+    this.version(3)
+      .stores({ outbox: 'id, table' })
+      .upgrade(async (tx) => {
+        const t = Date.now()
+        for (const name of SYNC_TABLES) {
+          await tx.table(name).toCollection().modify((r) => { r.updatedAt ??= t })
+        }
+      })
   }
 }
 
@@ -35,10 +57,58 @@ export const uid = () =>
     ? crypto.randomUUID()
     : Math.random().toString(36).slice(2) + Date.now().toString(36)
 
+/** Khoá chính của một bảng (dayLogs dùng date). */
+export function keyOf(table: SyncTable, row: { id?: string; date?: string }): string {
+  return table === 'dayLogs' ? (row.date as string) : (row.id as string)
+}
+
+type Listener = () => void
+const listeners = new Set<Listener>()
+/** Sync module đăng ký để biết khi có thay đổi cần đẩy. */
+export function onLocalWrite(fn: Listener) {
+  listeners.add(fn)
+  return () => listeners.delete(fn)
+}
+
+/**
+ * Ghi có theo dõi: đặt updatedAt và ghi outbox trong cùng transaction.
+ * Mọi thao tác ghi của UI phải đi qua put/patch/softDelete, không gọi db.x trực tiếp.
+ */
+export async function put<T extends object>(table: SyncTable, row: T) {
+  const updatedAt = now().getTime()
+  const full = { ...row, updatedAt } as T & { updatedAt: number }
+  await db.transaction('rw', db.table(table), db.outbox, async () => {
+    await db.table(table).put(full)
+    const rowId = keyOf(table, full as never)
+    await db.outbox.put({ id: `${table}:${rowId}`, table, rowId, updatedAt })
+  })
+  listeners.forEach((l) => l())
+  return full
+}
+
+export async function patch(table: SyncTable, rowId: string, changes: object) {
+  const updatedAt = now().getTime()
+  await db.transaction('rw', db.table(table), db.outbox, async () => {
+    const n = await db.table(table).update(rowId, { ...changes, updatedAt })
+    if (n === 0) return
+    await db.outbox.put({ id: `${table}:${rowId}`, table, rowId, updatedAt })
+  })
+  listeners.forEach((l) => l())
+}
+
+export async function softDelete(table: SyncTable, rowId: string) {
+  await patch(table, rowId, { deleted: true })
+}
+
+/** Ghi từ cloud về: không đụng outbox (tránh vòng lặp). */
+export async function applyRemote(table: SyncTable, row: object) {
+  await db.table(table).put(row)
+}
+
 export async function getSettings(): Promise<Settings> {
   const s = await db.settings.get('default')
   if (s) return { ...DEFAULT_SETTINGS, ...s }
-  await db.settings.put(DEFAULT_SETTINGS)
+  await put('settings', DEFAULT_SETTINGS)
   return DEFAULT_SETTINGS
 }
 
@@ -46,24 +116,20 @@ export async function getOrCreateDayLog(date: ISODate): Promise<DayLog> {
   const existing = await db.dayLogs.get(date)
   if (existing) return existing
   const fresh: DayLog = { date, locked: false }
-  await db.dayLogs.put(fresh)
-  return fresh
+  return put('dayLogs', fresh)
 }
 
 /** Việc chính của một ngày: task lên lịch cho ngày đó, chưa đóng. */
 export async function mainTaskFor(date: ISODate): Promise<Task | undefined> {
   const list = await db.tasks.where('scheduledFor').equals(date).toArray()
-  return list.find((t) => t.status === 'planned' || t.status === 'active')
+  return list.find((t) => !t.deleted && (t.status === 'planned' || t.status === 'active'))
 }
+
+export const notDeleted = <T extends { deleted?: boolean }>(r: T) => !r.deleted
 
 export async function exportAll() {
   const [goals, tasks, sessions, parking, dayLogs, settings] = await Promise.all([
-    db.goals.toArray(),
-    db.tasks.toArray(),
-    db.sessions.toArray(),
-    db.parking.toArray(),
-    db.dayLogs.toArray(),
-    db.settings.toArray(),
+    db.goals.toArray(), db.tasks.toArray(), db.sessions.toArray(), db.parking.toArray(), db.dayLogs.toArray(), db.settings.toArray(),
   ])
   return { exportedAt: new Date().toISOString(), goals, tasks, sessions, parking, dayLogs, settings }
 }

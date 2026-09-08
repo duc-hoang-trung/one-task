@@ -1,7 +1,13 @@
 import type { HM, ISODate } from './dates'
 
+/** Mọi bản ghi đồng bộ được đều mang updatedAt (ms) và có thể bị soft-delete. */
+export interface Synced {
+  updatedAt?: number
+  deleted?: boolean
+}
+
 export type GoalStatus = 'open' | 'done' | 'dropped'
-export interface WeekGoal {
+export interface WeekGoal extends Synced {
   id: string
   weekStart: ISODate
   title: string
@@ -21,7 +27,7 @@ export interface DodItem {
   text: string
   done: boolean
 }
-export interface Task {
+export interface Task extends Synced {
   id: string
   goalId?: string
   title: string
@@ -37,7 +43,7 @@ export interface Task {
 }
 
 export type SessionKind = 'focus' | 'break'
-export interface Session {
+export interface Session extends Synced {
   id: string
   /** với break: '' */
   taskId: string
@@ -51,7 +57,7 @@ export interface Session {
 }
 
 export type ParkingResolution = 'drop' | 'later' | 'tomorrow'
-export interface ParkingItem {
+export interface ParkingItem extends Synced {
   id: string
   text: string
   createdAt: number
@@ -63,7 +69,7 @@ export interface ParkingItem {
   doneAt?: number
 }
 
-export interface DayLog {
+export interface DayLog extends Synced {
   date: ISODate
   morningDoneAt?: HM
   shutdownAt?: HM
@@ -74,7 +80,7 @@ export interface DayLog {
 }
 
 export type LangSetting = 'auto' | 'vi' | 'en'
-export interface Settings {
+export interface Settings extends Synced {
   id: 'default'
   shutdownTime: HM
   bedtimeTarget: HM
