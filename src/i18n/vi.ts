@@ -64,6 +64,22 @@ export const vi = {
   'morn.newMit': 'Tạo việc quan trọng nhất…',
   'morn.pickMitHint': 'Chọn một việc quan trọng nhất để có nút Bắt đầu 10 phút. Không bắt buộc.',
 
+  // plan
+  'nav.plan': 'Kế hoạch',
+  'plan.title': 'Kế hoạch',
+  'plan.subtitle': 'Sắp việc ở đây, không phải lúc đang làm.',
+  'plan.matrix': 'Ma trận',
+  'plan.week': 'Tuần',
+  'plan.all': 'Tất cả',
+  'plan.inBacklog': 'trong Backlog',
+  'plan.inbox': 'Inbox · {n} ý từ Parking Lot',
+  'plan.inbox.hint': 'Kéo vào một ô, hoặc chạm Q1–Q4 để thành việc. Xoá nếu không còn cần.',
+  'plan.nudge': 'Backlog có {n} việc. Nhiều quá để nhìn. Dọn: xoá cái không còn làm, gộp cái giống nhau.',
+  'plan.dropToday': '↓ Kéo vào đây: Hôm nay',
+  'plan.dropTomorrow': '↓ Kéo vào đây: Mai',
+  'plan.addBacklog': 'Thêm vào Backlog',
+  'plan.backlogZone': 'Backlog · {n} · kéo vào đây để gỡ khỏi lịch',
+
   // onboarding
   'onb.subtitle': 'Ba mốc giờ. Còn lại app tự lo.',
   'onb.intro': 'Một việc chính mỗi ngày. Sáng 1 phút: bắt đầu. Tối 3 phút: đóng ngày. Sau đó khoá tới sáng.',

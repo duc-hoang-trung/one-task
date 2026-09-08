@@ -1,6 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useEffect, useState } from 'react'
-import { CalendarDays, Settings as SettingsIcon, Sun, Target } from 'lucide-react'
+import { CalendarDays, LayoutGrid, Settings as SettingsIcon, Sun, Target } from 'lucide-react'
 import { useNow } from './hooks'
 import { LangContext, resolveLang, useT } from './i18n'
 import { activeSession, closeStaleSessions } from './lib/actions'
@@ -13,12 +13,13 @@ import { CalendarScreen } from './screens/CalendarScreen'
 import { MorningScreen } from './screens/MorningScreen'
 import { initSync } from './sync'
 import { NightScreen } from './screens/NightScreen'
+import { PlanScreen } from './screens/PlanScreen'
 import { SettingsScreen } from './screens/SettingsScreen'
 import { ShutdownScreen } from './screens/ShutdownScreen'
 import { TodayScreen } from './screens/TodayScreen'
 import { WeekScreen } from './screens/WeekScreen'
 
-type View = 'main' | 'calendar' | 'week' | 'settings'
+type View = 'main' | 'plan' | 'calendar' | 'week' | 'settings'
 
 export default function App() {
   useEffect(() => initSync(), [])
@@ -64,6 +65,8 @@ function Shell({ settings }: { settings: Settings }) {
     screen = <ShutdownScreen today={today} task={task} settings={settings} now={now} onCancel={() => setShutdown(false)} />
   } else if (view === 'calendar') {
     screen = <CalendarScreen today={today} settings={settings} now={now} onGoToday={() => setView('main')} />
+  } else if (view === 'plan') {
+    screen = <PlanScreen today={today} settings={settings} />
   } else if (view === 'week') {
     screen = <WeekScreen today={today} settings={settings} now={now} />
   } else if (view === 'settings') {
@@ -99,6 +102,7 @@ function Shell({ settings }: { settings: Settings }) {
       <nav className="fixed inset-x-0 bottom-0 border-t border-line bg-paper/90 backdrop-blur-md" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
         <div className="mx-auto flex max-w-md gap-1 px-3 py-1.5">
           <Tab v="main" label={t('nav.today')} icon={<Sun size={20} strokeWidth={1.75} />} />
+          <Tab v="plan" label={t('nav.plan')} icon={<LayoutGrid size={20} strokeWidth={1.75} />} />
           <Tab v="calendar" label={t('nav.calendar')} icon={<CalendarDays size={20} strokeWidth={1.75} />} />
           <Tab v="week" label={t('nav.week')} icon={<Target size={20} strokeWidth={1.75} />} />
           <Tab v="settings" label={t('nav.settings')} icon={<SettingsIcon size={20} strokeWidth={1.75} />} />
