@@ -7,7 +7,10 @@ import { activeSession, closeStaleSessions } from './lib/actions'
 import { isClockOverridden } from './lib/clock'
 import { db, mainTaskFor } from './lib/db'
 import { logicalDate, toHM } from './lib/dates'
-import { computePhase } from './lib/phase'
+import { alertUser, once } from './lib/notify'
+import { computePhase, isShutdownDue } from './lib/phase'
+import { toHM as hm } from './lib/dates'
+import { tasksFor } from './lib/db'
 import { DEFAULT_SETTINGS, type Settings } from './lib/types'
 import { CalendarScreen } from './screens/CalendarScreen'
 import { MorningScreen } from './screens/MorningScreen'
@@ -48,6 +51,21 @@ function Shell({ settings }: { settings: Settings }) {
   useEffect(() => {
     void closeStaleSessions(today)
   }, [today])
+
+  // Nhắc: đến giờ đóng ngày (một lần/ngày) và đến giờ bắt đầu một việc (một lần/việc).
+  const todayTasks = useLiveQuery(() => tasksFor(today), [today], [])
+  useEffect(() => {
+    if (!settings.onboarded || todayLog?.locked) return
+    if (isShutdownDue(now, settings.shutdownTime) && hm(now) === settings.shutdownTime) {
+      once(`shutdown:${today}`, () => alertUser(settings.notifications, t('notif.shutdown'), t('notif.shutdown.body'), 'gentle', 'shutdown'))
+    }
+    const cur = hm(now)
+    for (const x of todayTasks) {
+      if (x.startAt === cur && (x.status === 'planned' || x.status === 'active')) {
+        once(`start:${x.id}:${today}`, () => alertUser(settings.notifications, t('notif.startAt', { title: x.title }), x.nextAction || undefined, 'gentle', `start-${x.id}`))
+      }
+    }
+  }, [now, today, todayLog?.locked, settings, todayTasks, t])
 
   // Đổi ngày logic (04:00) → về màn hình chính, thoát shutdown.
   useEffect(() => {

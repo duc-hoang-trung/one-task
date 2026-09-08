@@ -1,5 +1,7 @@
 import { Coffee, Play } from 'lucide-react'
+import { useEffect } from 'react'
 import { useT } from '../i18n'
+import { alertUser, once } from '../lib/notify'
 import { endSession, extendSession, startBreak, startSession } from '../lib/actions'
 import type { ISODate } from '../lib/dates'
 import type { Session, Settings } from '../lib/types'
@@ -19,7 +21,7 @@ export function FocusTimer({
 }: {
   session: Session
   nowMs: number
-  settings: Pick<Settings, 'extendMin' | 'pomodoroMin' | 'breakMin' | 'minFocusMin'>
+  settings: Pick<Settings, 'extendMin' | 'pomodoroMin' | 'breakMin' | 'minFocusMin' | 'notifications'>
   streakMin: number
   today: ISODate
   taskId: string
@@ -33,6 +35,15 @@ export function FocusTimer({
   const shown = Math.abs(leftSec)
   const pct = Math.min(1, elapsedSec / totalSec)
   const suggestBreak = !isBreak && streakMin >= settings.pomodoroMin
+
+  useEffect(() => {
+    if (!over) return
+    once(`timer:${session.id}:${session.plannedMin}`, () =>
+      isBreak
+        ? alertUser(settings.notifications, t('notif.breakDone'), t('notif.breakDone.body'), 'break', 'break')
+        : alertUser(settings.notifications, t('notif.timerDone', { n: session.plannedMin }), t('notif.timerDone.body'), 'done', 'timer'),
+    )
+  }, [over, isBreak, session.id, session.plannedMin, settings.notifications, t])
 
   const resume = () => void startSession(taskId, today, settings.minFocusMin, nowMs)
 

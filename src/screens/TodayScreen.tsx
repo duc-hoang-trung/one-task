@@ -14,6 +14,7 @@ import { completeTask, reorderTasks, setDod, startSession } from '../lib/actions
 import { db, isOpen, tasksFor } from '../lib/db'
 import type { ISODate } from '../lib/dates'
 import { focusMinutesByDate, focusStreakMin, sessionMinutes } from '../lib/metrics'
+import { requestNotifyPermission } from '../lib/notify'
 import { isShutdownDue } from '../lib/phase'
 import type { Area, Session, Settings, Task } from '../lib/types'
 
@@ -47,7 +48,10 @@ export function TodayScreen({
   const timerOnMit = !!session && (!!mit && (session.taskId === mit.id || session.kind === 'break'))
   const canCloseMit = mit ? mit.dod.length === 0 || mit.dod.every((d) => d.done) : false
 
-  const focus = (x: Task) => void startSession(x.id, today, settings.minFocusMin, nowMs)
+  const focus = (x: Task) => {
+    if (settings.notifications.system) void requestNotifyPermission()
+    void startSession(x.id, today, settings.minFocusMin, nowMs)
+  }
   const groups: { area: Area; items: Task[] }[] = (['work', 'personal'] as Area[])
     .map((area) => ({ area, items: open.filter((x) => x.area === area) }))
     .filter((g) => g.items.length > 0)

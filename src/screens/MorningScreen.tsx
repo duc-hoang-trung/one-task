@@ -11,6 +11,7 @@ import { openMorning, startSession } from '../lib/actions'
 import { db, isOpen, tasksFor } from '../lib/db'
 import { addDays, type ISODate } from '../lib/dates'
 import { focusMinutesByDate } from '../lib/metrics'
+import { requestNotifyPermission } from '../lib/notify'
 import type { Settings, Task } from '../lib/types'
 
 /**
@@ -35,6 +36,7 @@ export function MorningScreen({ today, task: mit, settings, now }: { today: ISOD
 
   async function start() {
     if (!mit) return
+    if (settings.notifications.system) void requestNotifyPermission()
     await openMorning(today, bedtime, now)
     await startSession(mit.id, today, settings.minFocusMin, now.getTime())
   }

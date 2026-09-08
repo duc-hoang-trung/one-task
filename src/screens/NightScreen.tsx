@@ -2,7 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { ParkingLot } from '../components/ParkingLot'
 import { Card, Page } from '../components/ui'
 import { useT } from '../i18n'
-import { db, mainTaskFor } from '../lib/db'
+import { db, isOpen, mainTaskFor, tasksFor } from '../lib/db'
 import { addDays, type ISODate } from '../lib/dates'
 import type { Settings } from '../lib/types'
 
@@ -11,6 +11,8 @@ export function NightScreen({ today, settings }: { today: ISODate; settings: Set
   const { t } = useT()
   const tomorrow = addDays(today, 1)
   const next = useLiveQuery(() => mainTaskFor(tomorrow), [tomorrow])
+  const tomorrows = useLiveQuery(() => tasksFor(tomorrow), [tomorrow], [])
+  const openN = tomorrows.filter(isOpen).length
   const log = useLiveQuery(() => db.dayLogs.get(today), [today])
 
   return (
@@ -18,8 +20,8 @@ export function NightScreen({ today, settings }: { today: ISODate; settings: Set
       <Page title={<span className="text-night-text">{t('night.title')}</span>} subtitle={log?.shutdownAt ? t('night.at', { t: log.shutdownAt }) : undefined}>
         <Card tone="dark" className="py-7">
           <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-night-muted">{t('night.planned', { t: settings.morningTime })}</p>
-          <p className="font-display mt-3 text-[28px] leading-[1.15]">{next ? next.nextAction || next.title : '—'}</p>
-          {next?.nextAction && <p className="mt-3 text-sm text-night-muted">{next.title}</p>}
+          <p className="font-display mt-3 text-[28px] leading-[1.15]">{next ? next.nextAction || next.title : openN ? t('morn.count', { n: openN }) : '—'}</p>
+          {next && <p className="mt-3 text-sm text-night-muted">{next.nextAction ? next.title : ''}{openN > 1 ? ` · ${t('morn.count', { n: openN })}` : ''}</p>}
         </Card>
         {log?.worry?.concern && (
           <Card tone="dark">

@@ -5,7 +5,7 @@ import { useT } from '../i18n'
 import { wipeAll } from '../lib/actions'
 import { isClockOverridden } from '../lib/clock'
 import { exportAll, put } from '../lib/db'
-import type { LangSetting, Settings } from '../lib/types'
+import type { Area, LangSetting, Settings } from '../lib/types'
 
 export function SettingsScreen({ settings, onboarding = false, onDone }: { settings: Settings; onboarding?: boolean; onDone?: () => void }) {
   const { t } = useT()
@@ -77,6 +77,27 @@ export function SettingsScreen({ settings, onboarding = false, onDone }: { setti
               <Input type="number" min={1} max={30} value={s.breakMin} onChange={(e) => setS({ ...s, breakMin: Number(e.target.value) || 5 })} />
             </Field>
           </div>
+          {!onboarding && (
+            <>
+              <Field label={t('set.defaultArea')}>
+                <Select value={s.defaultArea} onChange={(e) => setS({ ...s, defaultArea: e.target.value as Area })}>
+                  <option value="work">{t('area.work')}</option>
+                  <option value="personal">{t('area.personal')}</option>
+                </Select>
+              </Field>
+              <Field label={t('set.notify')} hint={t('set.notify.hint')}>
+                <div className="flex flex-col gap-2 pt-1">
+                  {(['sound', 'vibrate', 'system'] as const).map((k) => (
+                    <label key={k} className="flex items-center gap-3">
+                      <input type="checkbox" className="h-5 w-5 accent-accent" checked={s.notifications[k]} onChange={(e) => setS({ ...s, notifications: { ...s.notifications, [k]: e.target.checked } })} />
+                      <span>{t(`set.notify.${k}`)}</span>
+                    </label>
+                  ))}
+                  {typeof Notification !== 'undefined' && Notification.permission === 'denied' && <Muted className="text-bad">{t('set.notify.denied')}</Muted>}
+                </div>
+              </Field>
+            </>
+          )}
           <Button size="lg" onClick={() => void save()}>{saved ? t('common.saved') : onboarding ? t('onb.start') : t('common.save')}</Button>
         </div>
       </Card>
