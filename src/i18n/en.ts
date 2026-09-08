@@ -288,8 +288,9 @@ export const en: Record<Key, string> = {
   'week.later.tomorrow': 'Tomorrow',
 
   'cal.title': 'Calendar',
-  'cal.subtitle': 'Look back, and set the main task for the next few days.',
+  'cal.subtitle': 'Look back by month, plan the days ahead.',
   'cal.today': 'Today',
+  'cal.legend.allDone': 'all done',
   'cal.legend.focus': 'worked',
   'cal.legend.closed': 'closed on time',
   'cal.legend.late': 'slept late',
@@ -303,6 +304,12 @@ export const en: Record<Key, string> = {
   'cal.future.tooFar': 'Too far to commit. Park it; decide next week.',
   'cal.future.planned': 'Planned',
   'cal.goToday': 'Back to today',
+  'cal.stats': 'Month in numbers',
+  'cal.stats.hint': '{n} days so far this month. Filter by area on the right.',
+  'cal.m.tasks': 'Tasks done / total',
+  'cal.m.mit': 'Days with the top task done',
+  'cal.m.focus': 'Total focus minutes',
+  'cal.chart': 'Tasks done per day',
 
   'dow.0': 'Sun', 'dow.1': 'Mon', 'dow.2': 'Tue', 'dow.3': 'Wed', 'dow.4': 'Thu', 'dow.5': 'Fri', 'dow.6': 'Sat',
   'dowShort.0': 'S', 'dowShort.1': 'M', 'dowShort.2': 'T', 'dowShort.3': 'W', 'dowShort.4': 'T', 'dowShort.5': 'F', 'dowShort.6': 'S',

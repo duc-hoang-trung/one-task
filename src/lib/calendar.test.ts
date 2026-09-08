@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { MAX_PLAN_AHEAD_DAYS, monthGrid, monthRange, relation, shiftMonth } from './calendar'
+import { monthDays, monthGrid, monthRange, relation, shiftMonth } from './calendar'
 
 describe('monthGrid', () => {
   it('tháng 9/2026 bắt đầu thứ Ba → 1 ô trống đầu, 5 tuần', () => {
@@ -28,8 +28,8 @@ describe('shiftMonth / monthRange / relation', () => {
   it('quan hệ với hôm nay', () => {
     expect(relation('2026-09-07', '2026-09-08')).toBe('past')
     expect(relation('2026-09-08', '2026-09-08')).toBe('today')
-    expect(relation('2026-09-22', '2026-09-08')).toBe('future') // đúng 14 ngày
-    expect(relation('2026-09-23', '2026-09-08')).toBe('too-far')
-    expect(MAX_PLAN_AHEAD_DAYS).toBe(14)
+    expect(relation('2026-12-23', '2026-09-08')).toBe('future')
+    expect(monthDays(2026, 9)).toHaveLength(30)
+    expect(monthDays(2026, 2)[0]).toBe('2026-02-01')
   })
 })

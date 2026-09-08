@@ -1,7 +1,4 @@
-import { addDays, fromISODate, toISODate, type ISODate } from './dates'
-
-/** Số ngày tối đa được đặt việc trước. Xa hơn → Parking Lot. */
-export const MAX_PLAN_AHEAD_DAYS = 14
+import { fromISODate, toISODate, type ISODate } from './dates'
 
 /**
  * Lưới tháng, tuần bắt đầu thứ Hai. Ô ngoài tháng = null.
@@ -35,10 +32,15 @@ export function monthRange(year: number, month: number): { from: ISODate; to: IS
   return { from, to }
 }
 
-export type DayRelation = 'past' | 'today' | 'future' | 'too-far'
+export type DayRelation = 'past' | 'today' | 'future'
 
 export function relation(day: ISODate, today: ISODate): DayRelation {
   if (day === today) return 'today'
-  if (day < today) return 'past'
-  return day <= addDays(today, MAX_PLAN_AHEAD_DAYS) ? 'future' : 'too-far'
+  return day < today ? 'past' : 'future'
+}
+
+/** Các ngày trong tháng (để vẽ biểu đồ). */
+export function monthDays(year: number, month: number): ISODate[] {
+  const n = new Date(year, month, 0).getDate()
+  return Array.from({ length: n }, (_, i) => toISODate(new Date(year, month - 1, i + 1)))
 }

@@ -306,8 +306,9 @@ export const vi = {
 
   // calendar
   'cal.title': 'Lịch',
-  'cal.subtitle': 'Nhìn lại và đặt việc chính cho vài ngày tới.',
+  'cal.subtitle': 'Nhìn lại theo tháng, đặt việc cho ngày tới.',
   'cal.today': 'Hôm nay',
+  'cal.legend.allDone': 'xong hết',
   'cal.legend.focus': 'có làm',
   'cal.legend.closed': 'đóng ngày đúng giờ',
   'cal.legend.late': 'ngủ muộn',
@@ -321,6 +322,12 @@ export const vi = {
   'cal.future.tooFar': 'Quá xa để chốt. Ghi vào Parking Lot, tuần sau tính.',
   'cal.future.planned': 'Đã đặt',
   'cal.goToday': 'Về hôm nay',
+  'cal.stats': 'Thống kê tháng',
+  'cal.stats.hint': '{n} ngày đã qua trong tháng. Lọc theo khu vực ở góc phải.',
+  'cal.m.tasks': 'Việc xong / tổng',
+  'cal.m.mit': 'Ngày xong việc quan trọng nhất',
+  'cal.m.focus': 'Tổng phút tập trung',
+  'cal.chart': 'Việc xong mỗi ngày',
 
   // days
   'dow.0': 'CN', 'dow.1': 'Thứ 2', 'dow.2': 'Thứ 3', 'dow.3': 'Thứ 4', 'dow.4': 'Thứ 5', 'dow.5': 'Thứ 6', 'dow.6': 'Thứ 7',
