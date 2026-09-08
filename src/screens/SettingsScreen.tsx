@@ -2,33 +2,19 @@ import { useState } from 'react'
 import { Button, Card, Col, Columns, Field, Input, Muted, Page, Select } from '../components/ui'
 import { AccountCard } from '../components/AccountCard'
 import { useT } from '../i18n'
-import { wipeAll } from '../lib/actions'
-import { isClockOverridden } from '../lib/clock'
-import { exportAll, put } from '../lib/db'
+import { put } from '../lib/db'
 import type { Area, LangSetting, Settings } from '../lib/types'
 
 export function SettingsScreen({ settings, onboarding = false, onDone }: { settings: Settings; onboarding?: boolean; onDone?: () => void }) {
   const { t } = useT()
   const [s, setS] = useState(settings)
   const [saved, setSaved] = useState(false)
-  const [confirmWipe, setConfirmWipe] = useState(false)
 
   async function save() {
     await put('settings', { ...s, onboarded: true })
     setSaved(true)
     setTimeout(() => setSaved(false), 1200)
     onDone?.()
-  }
-
-  async function download() {
-    const data = await exportAll()
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `motviec-${data.exportedAt.slice(0, 10)}.json`
-    a.click()
-    URL.revokeObjectURL(url)
   }
 
   // Đổi ngôn ngữ áp dụng ngay (lưu luôn) để người dùng thấy hiệu quả.
@@ -108,28 +94,6 @@ export function SettingsScreen({ settings, onboarding = false, onDone }: { setti
       {!onboarding && (
         <Col>
           <AccountCard />
-          <Card>
-            <h2 className="font-display text-xl">{t('set.data')}</h2>
-            <Muted>{t('set.data.hint')}</Muted>
-            <div className="mt-3 flex flex-col gap-2">
-              <Button variant="secondary" onClick={() => void download()}>{t('set.export')}</Button>
-              {confirmWipe ? (
-                <div className="flex gap-2">
-                  <Button variant="danger" onClick={() => void wipeAll().then(() => location.reload())}>{t('set.wipe.confirm')}</Button>
-                  <Button variant="ghost" onClick={() => setConfirmWipe(false)}>{t('common.cancel')}</Button>
-                </div>
-              ) : (
-                <Button variant="danger" onClick={() => setConfirmWipe(true)}>{t('set.wipe')}</Button>
-              )}
-            </div>
-          </Card>
-          <Card>
-            <h2 className="font-display text-xl">{t('set.demo')}</h2>
-            <Muted>
-              {t('set.demo.hint')}
-              {isClockOverridden() && <strong className="block text-accent">{t('set.demo.active')}</strong>}
-            </Muted>
-          </Card>
         </Col>
       )}
       </Columns>

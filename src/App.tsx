@@ -2,7 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { useEffect, useState } from 'react'
 import { LayoutGrid, Moon, Settings as SettingsIcon, Sun, Target } from 'lucide-react'
 import { useNow, useSessionGuard } from './hooks'
-import { LangContext, resolveLang, useT } from './i18n'
+import { LangContext, resolveLang, translate, useT } from './i18n'
 import { activeSession } from './lib/actions'
 import { isClockOverridden } from './lib/clock'
 import { db, mainTaskFor } from './lib/db'
@@ -12,7 +12,8 @@ import { computePhase, isWithinAfter } from './lib/phase'
 import { tasksFor } from './lib/db'
 import { DEFAULT_SETTINGS, type Settings } from './lib/types'
 import { MorningScreen } from './screens/MorningScreen'
-import { initSync } from './sync'
+import { gateFor, initSync, useSync } from './sync'
+import { LoginScreen } from './screens/LoginScreen'
 import { NightScreen } from './screens/NightScreen'
 import { PlanScreen } from './screens/PlanScreen'
 import { SettingsScreen } from './screens/SettingsScreen'
@@ -21,16 +22,25 @@ import { TodayScreen } from './screens/TodayScreen'
 import { GoalsScreen } from './screens/GoalsScreen'
 
 type View = 'main' | 'plan' | 'week' | 'settings'
+const t0 = (lang: Settings['lang']) => translate(resolveLang(lang), 'app.name')
 
 export default function App() {
   useEffect(() => initSync(), [])
   // Chỉ đọc trong liveQuery (transaction read-only); merge default ở ngoài.
   const stored = useLiveQuery(() => db.settings.get('default'), [], null)
   const settings: Settings | undefined = stored === null ? undefined : { ...DEFAULT_SETTINGS, ...stored }
+  const sync = useSync()
   if (settings === undefined) return null
+  const gate = gateFor(sync.status)
   return (
     <LangContext.Provider value={resolveLang(settings.lang)}>
-      <Shell settings={settings} />
+      {gate === 'loading' ? (
+        <div className="flex min-h-full items-center justify-center"><p className="font-display animate-pulse text-2xl text-ink-3">{t0(settings.lang)}</p></div>
+      ) : gate === 'login' ? (
+        <LoginScreen />
+      ) : (
+        <Shell settings={settings} />
+      )}
     </LangContext.Provider>
   )
 }

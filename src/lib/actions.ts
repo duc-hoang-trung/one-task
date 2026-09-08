@@ -335,7 +335,6 @@ export async function wipeAll() {
   await Promise.all([
     db.goals.clear(), db.tasks.clear(), db.sessions.clear(), db.parking.clear(), db.dayLogs.clear(), db.settings.clear(), db.outbox.clear(),
   ])
-  localStorage.removeItem('sync.lastPulledAt')
 }
 
 export const todayISO = (d: Date) => toISODate(d)

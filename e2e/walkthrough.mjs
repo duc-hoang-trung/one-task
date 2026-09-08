@@ -281,6 +281,7 @@ await shot('15-plan-month-planned')
 await page.getByRole('button', { name: 'Cài đặt' }).click()
 await expectText('Giờ đóng ngày')
 await expectText('Chưa cấu hình Supabase')
+for (const gone of ['Test / demo', 'Tải bản sao JSON', 'Xoá toàn bộ dữ liệu']) if (await page.getByText(gone).isVisible().catch(() => false)) throw new Error(`Vẫn còn: ${gone}`)
 await shot('13-settings')
 
 console.log(errors.length ? `ERRORS:\n${errors.join('\n')}` : 'E2E OK, no console errors')

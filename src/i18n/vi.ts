@@ -115,10 +115,8 @@ export const vi = {
   // account / sync
   'acc.title': 'Tài khoản & đồng bộ',
   'acc.off': 'Chưa cấu hình Supabase. App chạy hoàn toàn trên máy này. Xem README để bật đồng bộ.',
-  'acc.why': 'Đăng nhập để dữ liệu lên cloud (Supabase) và dùng được trên nhiều máy. Không mật khẩu: nhập email, bấm link trong mail.',
   'acc.email': 'Email',
   'acc.sendLink': 'Gửi link đăng nhập',
-  'acc.sent': 'Đã gửi link tới {email}. Mở mail trên máy này và bấm link.',
   'acc.signedInAs': 'Đang đăng nhập:',
   'acc.lastSync': 'Đã đồng bộ lúc {t}',
   'acc.pending': '{n} thay đổi chờ đẩy',
@@ -126,6 +124,15 @@ export const vi = {
   'acc.signOut': 'Đăng xuất',
   'acc.status.syncing': 'Đang đồng bộ…',
   'acc.status.offline': 'Offline. {n} thay đổi sẽ đẩy khi có mạng.',
+  'acc.signOut.confirm': 'Đăng xuất thật',
+  'acc.signOut.hint': 'Dữ liệu trên máy này sẽ xoá; bản trên cloud giữ nguyên, đăng nhập lại là có.',
+  'acc.signOut.pending': 'Còn {n} thay đổi chưa đẩy lên. Kết nối mạng rồi thử lại.',
+  'login.tagline': 'Một việc chính mỗi ngày. Việc còn lại có chỗ của nó.',
+  'login.why': 'Đăng nhập để dữ liệu đi theo bạn qua mọi máy. Không mật khẩu: nhập email, bấm link trong mail.',
+  'login.sent': 'Đã gửi link tới {email}.',
+  'login.sentHint': 'Mở mail trên chính trình duyệt này rồi bấm link. Không thấy thì xem mục spam.',
+  'login.resend': 'Dùng email khác / gửi lại',
+  'login.sending': 'Đang gửi…',
   'acc.status.error': 'Lỗi đồng bộ:',
 
   // settings
@@ -141,11 +148,6 @@ export const vi = {
   'set.pomodoro': 'Gợi ý nghỉ sau (phút)',
   'set.pomodoro.hint': 'Tập trung liền bấy nhiêu phút thì app gợi ý nghỉ.',
   'set.break': 'Phút nghỉ',
-  'set.data': 'Dữ liệu',
-  'set.data.hint': 'Nằm trong trình duyệt này. Không server, không tài khoản.',
-  'set.export': 'Tải bản sao JSON',
-  'set.wipe': 'Xoá toàn bộ dữ liệu…',
-  'set.wipe.confirm': 'Xoá thật',
   'set.notify': 'Thông báo',
   'set.notify.hint': 'Khi hết giờ hẹn, hết nghỉ, đến giờ đóng ngày, đến giờ bắt đầu một việc. Chỉ khi app đang mở hoặc chạy nền.',
   'set.notify.sound': 'Âm thanh',
@@ -160,9 +162,6 @@ export const vi = {
   'notif.shutdown': 'Đến giờ đóng ngày',
   'notif.shutdown.body': '3 phút. Rà việc, chốt mai, rồi nghỉ.',
   'notif.startAt': 'Đến giờ: {title}',
-  'set.demo': 'Test / demo',
-  'set.demo.hint': 'Thêm ?d=YYYY-MM-DD&t=HH:MM vào URL để giả lập giờ; ?reset-clock để về giờ thật.',
-  'set.demo.active': 'Đang chạy giờ giả lập.',
 
   // morning
   'morn.title': 'Sáng',
