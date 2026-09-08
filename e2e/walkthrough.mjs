@@ -128,6 +128,23 @@ await page.waitForTimeout(200)
 await page.waitForTimeout(500); console.log(await page.locator('section').first().innerText()); if (await page.locator('section').first().getByPlaceholder(/Hoàn thành 3 module/).isVisible().catch(() => false)) throw new Error('Vẫn cho thêm mục tiêu thứ 3')
 await shot('12-week')
 
+// 11b. Calendar: past day detail, future day plan, too-far blocked
+await page.getByRole('button', { name: 'Lịch' }).click()
+await expectText('Tháng 9 2026')
+await page.getByRole('button', { name: '8', exact: true }).click()      // yesterday (08/09) → detail
+await expectText('Việc chính')
+await expectText('Làm 20 câu S3')
+await shot('14-calendar-past')
+await page.getByRole('button', { name: '12', exact: true }).click()     // +3 days → plan form
+await expectText('Đặt việc chính cho ngày này')
+await page.getByPlaceholder('Làm 20 câu S3').fill('Viết 2 trang báo cáo')
+await page.getByRole('button', { name: 'Chốt việc này' }).click()
+await expectText('Đã đặt')
+await expectText('Viết 2 trang báo cáo')
+await shot('15-calendar-planned')
+await page.getByRole('button', { name: '30', exact: true }).click()     // +21 days → too far
+await expectText('Quá xa để chốt')
+
 // 12. Settings
 await page.getByRole('button', { name: 'Cài đặt' }).click()
 await expectText('Giờ đóng ngày')

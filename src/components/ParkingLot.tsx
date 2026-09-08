@@ -28,7 +28,7 @@ export function ParkingLot({ today, dark = false }: { today: ISODate; dark?: boo
   return (
     <div className={dark ? 'text-night-text' : ''}>
       <div className="mb-1.5 flex items-baseline justify-between gap-3">
-        <span className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${dark ? 'text-night-muted' : 'text-ink-3'}`}>{t('park.title')}</span>
+        <span className={`shrink-0 whitespace-nowrap text-[11px] font-semibold uppercase tracking-[0.14em] ${dark ? 'text-night-muted' : 'text-ink-3'}`}>{t('park.title')}</span>
         <span className={`text-right text-[12px] ${dark ? 'text-night-muted' : 'text-ink-3'}`}>{status}</span>
       </div>
       <input
