@@ -1,9 +1,10 @@
 import { Check, MoreHorizontal, Play, Star } from 'lucide-react'
-import { useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { useT } from '../i18n'
 import { completeTask, deleteTask, scheduleTask, setMain, uncompleteTask } from '../lib/actions'
 import { addDays, type ISODate } from '../lib/dates'
 import type { Task } from '../lib/types'
+import { Popover } from './Popover'
 import { QuadrantChip } from './QuadrantChip'
 
 /**
@@ -26,10 +27,13 @@ export function TaskRow({
 }) {
   const { t } = useT()
   const [menu, setMenu] = useState(false)
+  const menuBtn = useRef<HTMLButtonElement>(null)
+  const closeMenu = useCallback(() => setMenu(false), [])
   const done = task.status === 'done'
 
+  // Không dùng opacity ở root (tạo stacking context); việc xong thì nhạt chữ.
   return (
-    <div className={`group relative flex items-center rounded-xl ${dense ? 'gap-1.5 bg-paper/80 px-1.5 py-1.5 ring-1 ring-line' : 'gap-2.5 px-2 py-2'} ${done ? 'opacity-60' : ''} ${compact || dense ? '' : 'bg-paper/60 ring-1 ring-line'}`}>
+    <div className={`group relative flex items-center rounded-xl ${dense ? 'gap-1.5 bg-paper/80 px-1.5 py-1.5 ring-1 ring-line' : 'gap-2.5 px-2 py-2'} ${done ? 'text-ink-3' : ''} ${compact || dense ? '' : 'bg-paper/60 ring-1 ring-line'}`}>
       <button
         aria-label={done ? t('row.undo') : t('common.done')}
         disabled={readOnly}
@@ -56,15 +60,13 @@ export function TaskRow({
         </button>
       )}
       {!readOnly && (
-        <button aria-label="menu" className="shrink-0 rounded-lg p-1.5 text-ink-3 hover:bg-paper-3 hover:text-ink" onClick={() => setMenu((m) => !m)}>
+        <button ref={menuBtn} aria-label="menu" className="shrink-0 rounded-lg p-1.5 text-ink-3 hover:bg-paper-3 hover:text-ink" onClick={() => setMenu((m) => !m)}>
           <MoreHorizontal size={16} />
         </button>
       )}
 
-      {menu && (
-        <>
-          <div className="fixed inset-0 z-20" onClick={() => setMenu(false)} />
-          <div className="absolute right-2 top-full z-30 mt-1 w-52 overflow-hidden rounded-xl bg-paper shadow-card ring-1 ring-line">
+      {menu && menuBtn.current && (
+        <Popover anchor={menuBtn.current} onClose={closeMenu}>
             {showStar && task.scheduledFor && !done && (
               <MenuItem onClick={() => void setMain(task.id, !task.isMain).then(() => setMenu(false))}>
                 <Star size={14} />{task.isMain ? t('row.unstar') : t('row.star')}
@@ -78,8 +80,7 @@ export function TaskRow({
               <MenuItem onClick={() => void scheduleTask(task.id, undefined).then(() => setMenu(false))}>{t('row.backlog')}</MenuItem>
             )}
             <MenuItem danger onClick={() => void deleteTask(task.id).then(() => setMenu(false))}>{t('row.delete')}</MenuItem>
-          </div>
-        </>
+        </Popover>
       )}
     </div>
   )

@@ -37,7 +37,7 @@ export function SortableItem({ id, children, className = '' }: { id: string; chi
     <li
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={`${isDragging ? 'z-10 opacity-90 shadow-card' : ''} ${className}`}
+      className={`draggable ${isDragging ? 'z-10 opacity-90 shadow-card' : ''} ${className}`}
       {...attributes}
       {...listeners}
     >

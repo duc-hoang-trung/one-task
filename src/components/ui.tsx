@@ -32,7 +32,7 @@ export function Card({ children, className = '', tone = 'light' }: { children: R
     accent: 'bg-accent-soft text-ink ring-accent/20',
     dark: 'bg-night-2 text-night-text ring-white/10',
   }
-  return <section className={`rounded-2xl p-5 ring-1 backdrop-blur-sm ${tones[tone]} ${className}`}>{children}</section>
+  return <section className={`rounded-2xl p-5 ring-1 ${tones[tone]} ${className}`}>{children}</section>
 }
 
 /** Nhãn nhỏ, chữ hoa, tracking rộng. */
