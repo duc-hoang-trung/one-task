@@ -8,8 +8,8 @@ import type { Area, Quadrant } from '../lib/types'
 
 /** Ô thêm nhanh: Enter để tạo. Toggle khu vực; token #w/#p/!n/~m ghi đè. */
 export function QuickAdd({
-  scheduledFor, defaultArea, quadrant, onCreated,
-}: { scheduledFor?: ISODate; defaultArea: Area; quadrant?: Quadrant; onCreated?: (id: string) => void }) {
+  scheduledFor, defaultArea, quadrant, onCreated, placeholder,
+}: { scheduledFor?: ISODate; defaultArea: Area; quadrant?: Quadrant; onCreated?: (id: string) => void; placeholder?: string }) {
   const { t } = useT()
   const [text, setText] = useState('')
   const [area, setArea] = useState<Area>(defaultArea)
@@ -28,7 +28,7 @@ export function QuickAdd({
         <Plus size={16} className="shrink-0 text-ink-3" />
         <input
           className="min-w-0 flex-1 bg-transparent py-1.5 text-[15px] placeholder:text-ink-3/70 focus:outline-none"
-          placeholder={t('quick.ph')}
+          placeholder={placeholder ?? t('quick.ph')}
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => {

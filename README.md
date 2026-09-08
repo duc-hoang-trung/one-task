@@ -10,9 +10,9 @@ Tài liệu: [01 · nghiên cứu](docs/01-research.md) · [02 · brainstorm](do
 |---|---|---|---|
 | ![](docs/screenshots/11b-today-list.png) | ![](docs/screenshots/16-plan-matrix.png) | ![](docs/screenshots/17-plan-week.png) | ![](docs/screenshots/12-goals.png) |
 
-| Lịch + thống kê | Sáng (MIT) | Đóng ngày | Night mode (dark) |
+| Kế hoạch · Tháng | Sáng (MIT) | Đóng ngày | Night mode (dark) |
 |---|---|---|---|
-| ![](docs/screenshots/15-calendar-planned.png) | ![](docs/screenshots/03-morning.png) | ![](docs/screenshots/08-shutdown-step2.png) | ![](docs/screenshots/10-night-dark.png) |
+| ![](docs/screenshots/15-plan-month-planned.png) | ![](docs/screenshots/03-morning.png) | ![](docs/screenshots/08-shutdown-step2.png) | ![](docs/screenshots/10-night-dark.png) |
 
 Trên màn rộng (≥1024px) điều hướng chuyển sang sidebar trái và mỗi tab chia cột để dùng hết bề ngang:
 
@@ -20,13 +20,12 @@ Trên màn rộng (≥1024px) điều hướng chuyển sang sidebar trái và m
 |---|---|---|
 | ![](docs/screenshots/11b-today-list-wide.png) | ![](docs/screenshots/16-plan-matrix-wide.png) | ![](docs/screenshots/17-plan-week-wide.png) |
 
-## Năm tab
+## Bốn tab
 
-1. **Hôm nay**: MIT (nếu có) với timer đếm ngược, DoD, hậu quả, Huỷ…; danh sách việc trong ngày nhóm Công việc / Cá nhân, kéo thả sắp thứ tự, ▶ tập trung cho bất kỳ việc nào (chọn 10 / 25 / 45 / 60 phút, ước lượng của việc, hoặc nhập số khác; app nhớ lần chọn cuối), thêm nhanh `Trả lời mail #w !3 ~20`, thanh tiến độ, Parking Lot ghi nhanh. Đang chạy có nút +15; hết giờ app hỏi "thêm 15?"; tập trung liền 25 phút thì gợi ý nghỉ 5.
-2. **Kế hoạch**: *Ma trận* Eisenhower cho Backlog (kéo giữa 4 ô, kéo vào "Hôm nay"/"Mai" để lên lịch), *Inbox* từ Parking Lot (kéo vào ô hoặc chạm Q1–Q4 để thành việc), bộ lọc khu vực, nhắc khi Backlog quá 30. *Tuần*: 7 ngày xếp dọc, kéo việc giữa ngày hoặc về Backlog.
-3. **Lịch**: ô ngày hiện xong/tổng, xong hết tô đậm, chấm xanh đóng ngày đúng giờ, chấm đỏ ngủ muộn. Chạm ngày quá khứ xem việc + phút tập trung + giờ đóng + giờ ngủ; ngày tới thêm việc ngay. Bên dưới: thống kê tháng (lọc khu vực) và biểu đồ cột việc xong mỗi ngày.
-4. **Mục tiêu**: Tuần ▸ Quý ▸ Năm, gắn mục tiêu con vào mục tiêu cha, đếm việc gắn, **check-in** đúng hướng / chậm / kẹt kèm một dòng ghi chú, nhắc khi quá hạn check-in hoặc quá 3 mục tiêu tuần. Review tuần: việc xong / tổng, ngày có ≥10′ MIT, đóng ngày đúng giờ, ngủ so mục tiêu, số lần quay lại sau ngày trống, số lần dời việc.
-5. **Cài đặt**: giờ đóng ngày / ngủ / sáng, phút khởi động và gia hạn, ngưỡng nghỉ, khu vực mặc định, thông báo (âm, rung, hệ thống), ngôn ngữ, tài khoản & đồng bộ, xuất JSON.
+1. **Hôm nay**: MIT (nếu có) với timer đếm ngược, DoD, hậu quả, Huỷ…; danh sách việc trong ngày nhóm Công việc / Cá nhân, kéo thả sắp thứ tự, ▶ tập trung cho bất kỳ việc nào (chọn 10 / 25 / 45 / 60 phút, ước lượng của việc, hoặc nhập số khác; app nhớ lần chọn cuối), thêm nhanh `Trả lời mail #w !3 ~20`, thanh tiến độ, Parking Lot ghi nhanh. Đang chạy có +15 và Tạm dừng; **tắt app hay khoá máy là timer tự dừng**, mở lại thì Tiếp tục (ẩn dưới 2 phút thì tự chạy tiếp, thời gian ẩn không tính); hết giờ app hỏi "thêm 15?"; tập trung liền 25 phút thì gợi ý nghỉ 5.
+2. **Kế hoạch** (một màn, ba cách nhìn, cùng một mô hình kéo thả): *Ma trận* Eisenhower cho Backlog (kéo giữa 4 ô, kéo vào "Hôm nay"/"Mai"), *Inbox* từ Parking Lot (kéo vào ô hoặc chạm Q1–Q4 để thành việc), bộ lọc khu vực, nhắc khi Backlog quá 30. *Tuần*: 7 ngày, kéo việc giữa ngày hoặc về Backlog. *Tháng*: ô ngày hiện xong/tổng, xong hết tô đậm, chấm xanh đóng ngày đúng giờ, chấm đỏ ngủ muộn; kéo việc từ Backlog hoặc từ chi tiết ngày vào một ô để đặt ngày; chạm ngày quá khứ xem việc + phút tập trung + giờ đóng + giờ ngủ; bên dưới thống kê tháng (lọc khu vực) và biểu đồ cột việc xong mỗi ngày.
+3. **Mục tiêu**: Tuần ▸ Quý ▸ Năm, gắn mục tiêu con vào mục tiêu cha, đếm việc gắn, **check-in** đúng hướng / chậm / kẹt kèm một dòng ghi chú, nhắc khi quá hạn check-in hoặc quá 3 mục tiêu tuần. Review tuần: việc xong / tổng, ngày có ≥10′ MIT, đóng ngày đúng giờ, ngủ so mục tiêu, số lần quay lại sau ngày trống, số lần dời việc.
+4. **Cài đặt**: giờ đóng ngày / ngủ / sáng, phút khởi động và gia hạn, ngưỡng nghỉ, khu vực mặc định, thông báo (âm, rung, hệ thống), ngôn ngữ, tài khoản & đồng bộ, xuất JSON.
 
 ## Nghi thức ngày
 

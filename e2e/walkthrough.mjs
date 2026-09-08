@@ -205,8 +205,8 @@ await shot('12-goals')
 // 11a. Plan: matrix quick add to backlog, inbox → Q, drag to Today, week board
 await page.getByRole('button', { name: 'Kế hoạch' }).click()
 await expectText('Ma trận')
-await page.getByPlaceholder(/Thêm việc/).fill('Ôn 30 flashcard !2 #p')
-await page.getByPlaceholder(/Thêm việc/).press('Enter')
+await page.getByPlaceholder(/Thêm vào Backlog/).fill('Ôn 30 flashcard !2 #p')
+await page.getByPlaceholder(/Thêm vào Backlog/).press('Enter')
 await page.waitForTimeout(400)
 await expectText('Ôn 30 flashcard')
 await page.getByPlaceholder('Gõ rồi Enter…').isVisible().catch(() => false) // parking not on this screen
@@ -214,7 +214,7 @@ await shot('16-plan-matrix')
 // drag backlog task into "Hôm nay" zone with real pointer steps (dnd-kit PointerSensor)
 {
   const src = page.getByText('Ôn 30 flashcard').first()
-  const dst = page.getByText(/Kéo vào đây: Hôm nay/)
+  const dst = page.getByText(/Kéo vào: Hôm nay/)
   const a = await src.boundingBox(); const b = await dst.boundingBox()
   await page.mouse.move(a.x + a.width / 2, a.y + a.height / 2)
   await page.mouse.down()
@@ -229,20 +229,53 @@ await expectText('Ôn 30 flashcard')
 await shot('17-plan-week')
 await page.getByRole('button', { name: 'Ma trận' }).click()
 
-// 11b. Calendar: past day detail, future day quick add, month stats
-await page.getByRole('button', { name: 'Lịch' }).click()
+// 11b. Plan ▸ Month: past day detail, future day quick add, drag between days, backlog → day, month stats
+if (await page.getByRole('button', { name: 'Lịch' }).isVisible().catch(() => false)) throw new Error('Tab Lịch vẫn còn')
+await page.getByRole('button', { name: 'Tháng' }).click()
 await expectText('Tháng 9 2026')
 await page.getByRole('button', { name: /^8/ }).first().click()          // yesterday (08/09) → detail
 await expectText('Làm 20 câu S3')
-await shot('14-calendar-past')
+await shot('14-plan-month-past')
 await page.getByRole('button', { name: /^12/ }).first().click()         // future day → quick add
 await page.getByPlaceholder(/Thêm việc/).fill('Viết 2 trang báo cáo #w')
 await page.getByPlaceholder(/Thêm việc/).press('Enter')
 await page.waitForTimeout(400)
 await expectText('Viết 2 trang báo cáo')
+// drag the task from the day-12 detail onto the day-13 cell
+{
+  const src = page.getByText('Viết 2 trang báo cáo').first()
+  const dst = page.getByRole('button', { name: /^13/ }).first()
+  const a = await src.boundingBox(); const b = await dst.boundingBox()
+  await page.mouse.move(a.x + a.width / 2, a.y + a.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(a.x + a.width / 2 + 10, a.y + a.height / 2 + 10)
+  await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2, { steps: 12 })
+  await page.mouse.up()
+  await page.waitForTimeout(400)
+}
+await expectText('Không có việc chính')                                 // day 12 now empty
+await page.getByRole('button', { name: /^13/ }).first().click()
+await expectText('Viết 2 trang báo cáo')
+// backlog panel → day 20
+await page.getByPlaceholder(/Thêm vào Backlog/).fill('Đọc 1 chương sách !2 #p')
+await page.getByPlaceholder(/Thêm vào Backlog/).press('Enter')
+await page.waitForTimeout(400)
+{
+  const src = page.getByText('Đọc 1 chương sách').first()
+  const dst = page.getByRole('button', { name: /^20/ }).first()
+  const a = await src.boundingBox(); const b = await dst.boundingBox()
+  await page.mouse.move(a.x + a.width / 2, a.y + a.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(a.x + a.width / 2 + 10, a.y + a.height / 2 + 10)
+  await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2, { steps: 12 })
+  await page.mouse.up()
+  await page.waitForTimeout(400)
+}
+await page.getByRole('button', { name: /^20/ }).first().click()
+await expectText('Đọc 1 chương sách')
 await expectText('Thống kê tháng')
 await expectText('Việc xong mỗi ngày')
-await shot('15-calendar-planned')
+await shot('15-plan-month-planned')
 
 // 12. Settings
 await page.getByRole('button', { name: 'Cài đặt' }).click()

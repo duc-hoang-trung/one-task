@@ -1,6 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useEffect, useState } from 'react'
-import { CalendarDays, LayoutGrid, Moon, Settings as SettingsIcon, Sun, Target } from 'lucide-react'
+import { LayoutGrid, Moon, Settings as SettingsIcon, Sun, Target } from 'lucide-react'
 import { useNow, useSessionGuard } from './hooks'
 import { LangContext, resolveLang, useT } from './i18n'
 import { activeSession } from './lib/actions'
@@ -11,7 +11,6 @@ import { alertUser, once } from './lib/notify'
 import { computePhase, isWithinAfter } from './lib/phase'
 import { tasksFor } from './lib/db'
 import { DEFAULT_SETTINGS, type Settings } from './lib/types'
-import { CalendarScreen } from './screens/CalendarScreen'
 import { MorningScreen } from './screens/MorningScreen'
 import { initSync } from './sync'
 import { NightScreen } from './screens/NightScreen'
@@ -21,7 +20,7 @@ import { ShutdownScreen } from './screens/ShutdownScreen'
 import { TodayScreen } from './screens/TodayScreen'
 import { GoalsScreen } from './screens/GoalsScreen'
 
-type View = 'main' | 'plan' | 'calendar' | 'week' | 'settings'
+type View = 'main' | 'plan' | 'week' | 'settings'
 
 export default function App() {
   useEffect(() => initSync(), [])
@@ -78,10 +77,8 @@ function Shell({ settings }: { settings: Settings }) {
   let screen
   if (shutdown) {
     screen = <ShutdownScreen today={today} task={task} settings={settings} now={now} onCancel={() => setShutdown(false)} />
-  } else if (view === 'calendar') {
-    screen = <CalendarScreen today={today} settings={settings} now={now} onGoToday={() => setView('main')} />
   } else if (view === 'plan') {
-    screen = <PlanScreen today={today} settings={settings} />
+    screen = <PlanScreen today={today} settings={settings} now={now} onGoToday={() => setView('main')} />
   } else if (view === 'week') {
     screen = <GoalsScreen today={today} settings={settings} now={now} />
   } else if (view === 'settings') {
@@ -95,7 +92,6 @@ function Shell({ settings }: { settings: Settings }) {
   const tabs: { v: View; label: string; icon: React.ReactNode }[] = [
     { v: 'main', label: t('nav.today'), icon: <Sun size={20} strokeWidth={1.75} /> },
     { v: 'plan', label: t('nav.plan'), icon: <LayoutGrid size={20} strokeWidth={1.75} /> },
-    { v: 'calendar', label: t('nav.calendar'), icon: <CalendarDays size={20} strokeWidth={1.75} /> },
     { v: 'week', label: t('nav.goals'), icon: <Target size={20} strokeWidth={1.75} /> },
     { v: 'settings', label: t('nav.settings'), icon: <SettingsIcon size={20} strokeWidth={1.75} /> },
   ]

@@ -196,3 +196,9 @@ Việc user cần làm để bật sync: xem README mục "Đồng bộ cloud".
 - Màn rộng: sidebar trái, mỗi tab chia 2–3 cột (Hôm nay 5/7, Kế hoạch 7/5, Lịch 5/7, Mục tiêu 3 cột, Cài đặt 2 cột, Tuần 4 cột). Nghi thức sáng / đóng ngày / đêm vẫn một cột hẹp giữa.
 - Lỗi UI đã sửa: modal tràn màn hình không cuộn được (giờ có max-height + cuộn, render qua portal để không bị tab bar che); ô Ước lượng trong form mất style (Input ghi đè className); việc ★ hiện trùng trong danh sách; form tạo việc thiếu Khu vực / Ma trận; "Bỏ sao" trên card MIT.
 
+## 13. v0.4: lớp nổi, timer tạm dừng, gộp Kế hoạch + Lịch
+
+- **Lớp nổi không bị che.** Nguyên nhân gốc là stacking context: `Card` có `backdrop-blur` (menu ⋯ bị Card kế tiếp đè, lớp bắt click ngoài co bằng Card) và `.animate-rise` giữ `animation-fill-mode: both` (Page là stacking context vĩnh viễn → bóng kéo dnd-kit lệch so với chuột đúng bằng offset của Page, nằm dưới tab bar). Sửa gốc: bỏ blur, bỏ fill-mode, menu ⋯ thành `Popover` portal ra body (lật lên khi thiếu chỗ), `DragOverlay` portal ra body. Dòng kéo được: `user-select: none`, `touch-action: manipulation` (không dùng `none` để vẫn cuộn được).
+- **Timer.** Trước: đồng hồ 1s ở Shell re-render toàn app (giật), và đếm theo giờ thật nên khoá máy 20 phút quay lại thấy hết giờ. Nay: timer tự tick, tạm dừng khi ẩn app (mốc ghi đồng bộ vào localStorage, không chờ IndexedDB), mở lại đối soát: ẩn < 2 phút → chạy tiếp (trừ khoảng ẩn), lâu hơn → để "Đã tạm dừng", bấm Tiếp tục. Có nút Tạm dừng tay. Phiên nghỉ vẫn theo giờ thật. Đánh đổi đã chấp nhận: thông báo "hết giờ" không kêu khi app ở nền.
+- **Gộp Kế hoạch + Lịch.** Tab Lịch bỏ; Kế hoạch có Ma trận · Tuần · Tháng, một hàm thả chung (`screens/plan/drop.ts`), Backlog panel dùng chung cho Tuần và Tháng, ô ngày trong lịch tháng là vùng thả (quá khứ vô hiệu). Thống kê tháng nằm trong Tháng.
+
