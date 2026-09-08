@@ -17,7 +17,7 @@ export function NightScreen({ today, settings }: { today: ISODate; settings: Set
 
   return (
     <div className="min-h-full bg-night text-night-text" style={{ backgroundImage: 'radial-gradient(900px 500px at 50% -10%, rgb(245 158 11 / 0.08), transparent 60%)' }}>
-      <Page title={<span className="text-night-text">{t('night.title')}</span>} subtitle={log?.shutdownAt ? t('night.at', { t: log.shutdownAt }) : undefined}>
+      <Page title={<span className="text-night-text">{t('night.title')}</span>} subtitle={log?.shutdownAt ? t('night.at', { t: log.shutdownAt }) : undefined} width="narrow">
         <Card tone="dark" className="py-7">
           <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-night-muted">{t('night.planned', { t: settings.morningTime })}</p>
           <p className="font-display mt-3 text-[28px] leading-[1.15]">{next ? next.nextAction || next.title : openN ? t('morn.count', { n: openN }) : '—'}</p>

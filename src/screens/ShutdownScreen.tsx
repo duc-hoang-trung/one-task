@@ -58,7 +58,7 @@ export function ShutdownScreen({
   )
 
   return (
-    <Page subtitle={fmtDate(lang, today)} title={t('sd.title')}>
+    <Page subtitle={fmtDate(lang, today)} title={t('sd.title')} width="narrow">
       <Dots />
 
       {step === 1 && (
@@ -169,7 +169,7 @@ export function ShutdownScreen({
       {editing && <TaskSheet task={editing} today={today} onClose={() => setEditing(null)} />}
       {creating && (
         <Modal onClose={() => setCreating(false)}>
-          <TaskForm scheduledFor={tomorrow} heading={t('morn.newMit')} onCreated={() => setCreating(false)} onCancel={() => setCreating(false)} />
+          <TaskForm scheduledFor={tomorrow} heading={t('morn.newMit')} defaultArea={settings.defaultArea} onCreated={() => setCreating(false)} onCancel={() => setCreating(false)} />
         </Modal>
       )}
     </Page>

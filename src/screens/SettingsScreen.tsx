@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Button, Card, Field, Input, Muted, Page, Select } from '../components/ui'
+import { Button, Card, Col, Columns, Field, Input, Muted, Page, Select } from '../components/ui'
 import { AccountCard } from '../components/AccountCard'
 import { useT } from '../i18n'
 import { wipeAll } from '../lib/actions'
@@ -39,12 +39,14 @@ export function SettingsScreen({ settings, onboarding = false, onDone }: { setti
   }
 
   return (
-    <Page title={onboarding ? t('app.name') : t('set.title')} subtitle={onboarding ? t('onb.subtitle') : undefined}>
+    <Page title={onboarding ? t('app.name') : t('set.title')} subtitle={onboarding ? t('onb.subtitle') : undefined} width={onboarding ? 'narrow' : 'wide'}>
       {onboarding && (
         <Card tone="accent">
           <p className="text-ink-2">{t('onb.intro')}</p>
         </Card>
       )}
+      <Columns cols="1/1">
+      <Col>
       <Card>
         <div className="flex flex-col gap-4">
           <Field label={t('set.lang')}>
@@ -101,9 +103,10 @@ export function SettingsScreen({ settings, onboarding = false, onDone }: { setti
           <Button size="lg" onClick={() => void save()}>{saved ? t('common.saved') : onboarding ? t('onb.start') : t('common.save')}</Button>
         </div>
       </Card>
+      </Col>
 
       {!onboarding && (
-        <>
+        <Col>
           <AccountCard />
           <Card>
             <h2 className="font-display text-xl">{t('set.data')}</h2>
@@ -127,8 +130,9 @@ export function SettingsScreen({ settings, onboarding = false, onDone }: { setti
               {isClockOverridden() && <strong className="block text-accent">{t('set.demo.active')}</strong>}
             </Muted>
           </Card>
-        </>
+        </Col>
       )}
+      </Columns>
     </Page>
   )
 }

@@ -1,4 +1,5 @@
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, TextareaHTMLAttributes } from 'react'
+import { createPortal } from 'react-dom'
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'accent'
 const variants: Record<Variant, string> = {
@@ -60,23 +61,52 @@ export function Field({ label, hint, error, children }: { label: string; hint?: 
 const inputCls =
   'w-full rounded-xl border border-line bg-paper px-3.5 py-2.5 text-[15px] text-ink placeholder:text-ink-3/70 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 transition-shadow'
 
-export function Input(props: InputHTMLAttributes<HTMLInputElement>) {
-  return <input className={inputCls} {...props} />
+export function Input({ className = '', ...props }: InputHTMLAttributes<HTMLInputElement>) {
+  return <input className={`${inputCls} ${className}`} {...props} />
 }
-export function Textarea(props: TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return <textarea className={`${inputCls} min-h-20 resize-y leading-relaxed`} {...props} />
+export function Textarea({ className = '', ...props }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  return <textarea className={`${inputCls} min-h-20 resize-y leading-relaxed ${className}`} {...props} />
 }
-export function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
-  return <select className={inputCls} {...props} />
+export function Select({ className = '', ...props }: React.SelectHTMLAttributes<HTMLSelectElement>) {
+  return <select className={`${inputCls} ${className}`} {...props} />
 }
 
-export function Page({ title, subtitle, children, className = '' }: { title?: ReactNode; subtitle?: string; children: ReactNode; className?: string }) {
+/** Nhóm nút chọn một (segmented). */
+export function Segmented<T extends string>({ value, onChange, options, className = '', size = 'md' }: {
+  value: T; onChange: (v: T) => void; options: { value: T; label: ReactNode }[]; className?: string; size?: 'sm' | 'md'
+}) {
   return (
-    <div className={`animate-rise mx-auto flex min-h-full w-full max-w-md flex-col gap-4 px-5 pb-28 pt-7 ${className}`}>
-      {(title || subtitle) && (
-        <header className="mb-1">
-          {subtitle && <Eyebrow className="mb-1">{subtitle}</Eyebrow>}
-          {title && <h1 className="font-display text-[34px] leading-[1.05] tracking-tight">{title}</h1>}
+    <div className={`inline-flex gap-0.5 rounded-xl bg-paper-3/60 p-0.5 ring-1 ring-line ${className}`}>
+      {options.map((o) => (
+        <button
+          key={o.value} type="button"
+          className={`rounded-[10px] font-medium transition-colors ${size === 'sm' ? 'px-2.5 py-1 text-xs' : 'px-3 py-1.5 text-sm'} ${value === o.value ? 'bg-paper text-ink shadow-card' : 'text-ink-2 hover:text-ink'}`}
+          onClick={() => onChange(o.value)}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+/**
+ * Khung màn hình. width='narrow': một cột giữa (nghi thức sáng/tối, onboarding).
+ * width='wide': trên màn rộng dùng hết bề ngang (tối đa 6xl); các màn tự chia cột bằng grid.
+ */
+export function Page({ title, subtitle, actions, children, className = '', width = 'wide' }: {
+  title?: ReactNode; subtitle?: string; actions?: ReactNode; children: ReactNode; className?: string; width?: 'narrow' | 'wide'
+}) {
+  const w = width === 'narrow' ? 'max-w-md lg:max-w-xl' : 'max-w-md md:max-w-3xl lg:max-w-6xl'
+  return (
+    <div className={`animate-rise mx-auto flex min-h-full w-full ${w} flex-col gap-4 px-5 pb-28 pt-7 lg:px-8 lg:pb-10 ${className}`}>
+      {(title || subtitle || actions) && (
+        <header className="mb-1 flex items-end justify-between gap-4">
+          <div>
+            {subtitle && <Eyebrow className="mb-1">{subtitle}</Eyebrow>}
+            {title && <h1 className="font-display text-[34px] leading-[1.05] tracking-tight">{title}</h1>}
+          </div>
+          {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
         </header>
       )}
       {children}
@@ -84,13 +114,29 @@ export function Page({ title, subtitle, children, className = '' }: { title?: Re
   )
 }
 
+/** Hai/ba cột trên màn rộng, một cột trên điện thoại. Con: <Col>…</Col>. */
+export function Columns({ children, className = '', cols = '5/7' }: { children: ReactNode; className?: string; cols?: '5/7' | '7/5' | '1/1' | '1/1/1' }) {
+  const tpl = {
+    '5/7': 'lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]',
+    '7/5': 'lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]',
+    '1/1': 'lg:grid-cols-2',
+    '1/1/1': 'lg:grid-cols-3',
+  }[cols]
+  return <div className={`flex flex-col gap-4 lg:grid lg:items-start lg:gap-6 ${tpl} ${className}`}>{children}</div>
+}
+export function Col({ children, className = '' }: { children: ReactNode; className?: string }) {
+  return <div className={`flex min-w-0 flex-col gap-4 ${className}`}>{children}</div>
+}
+
+/** Portal ra body để không bị stacking context của màn hình (animation) đẩy xuống dưới tab bar. */
 export function Modal({ children, onClose }: { children: ReactNode; onClose?: () => void }) {
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/40 p-3 backdrop-blur-[2px] sm:items-center" onClick={onClose}>
-      <div className="animate-rise w-full max-w-md rounded-3xl bg-paper p-5 shadow-2xl ring-1 ring-line" onClick={(e) => e.stopPropagation()}>
+      <div role="dialog" aria-modal="true" className="animate-rise max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto rounded-3xl bg-paper p-5 shadow-2xl ring-1 ring-line sm:max-w-lg" onClick={(e) => e.stopPropagation()}>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
 

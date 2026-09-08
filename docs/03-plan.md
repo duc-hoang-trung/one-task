@@ -189,3 +189,10 @@ Việc user cần làm để bật sync: xem README mục "Đồng bộ cloud".
 **Không làm (cố ý):** timeline theo giờ trong ngày, kéo thả sắp thứ tự trong Parking Lot, streak, push notification từ server.
 
 **Đo sau 4 tuần** (ở tab Lịch và Mục tiêu): tỉ lệ việc xong / tổng theo tháng, số ngày có ★ xong, số lần quay lại sau ngày trống, số check-in mục tiêu. Nếu Backlog lớn dần và ★ xong ít dần, đó là dấu hiệu app đang thành nơi xếp việc: quay về dùng đúng nghi thức sáng/tối.
+
+## 12. v0.3.1: phản hồi sau khi dùng thử
+
+- Nút Bắt đầu chọn được thời lượng (chip 10/25/45/60, ước lượng của việc, hoặc nhập tay). Nhớ lần chọn cuối. ▶ ở dòng việc mở hộp chọn thời lượng. Đang chạy có +15.
+- Màn rộng: sidebar trái, mỗi tab chia 2–3 cột (Hôm nay 5/7, Kế hoạch 7/5, Lịch 5/7, Mục tiêu 3 cột, Cài đặt 2 cột, Tuần 4 cột). Nghi thức sáng / đóng ngày / đêm vẫn một cột hẹp giữa.
+- Lỗi UI đã sửa: modal tràn màn hình không cuộn được (giờ có max-height + cuộn, render qua portal để không bị tab bar che); ô Ước lượng trong form mất style (Input ghi đè className); việc ★ hiện trùng trong danh sách; form tạo việc thiếu Khu vực / Ma trận; "Bỏ sao" trên card MIT.
+

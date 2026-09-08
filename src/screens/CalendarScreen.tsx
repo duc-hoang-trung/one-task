@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { QuickAdd } from '../components/QuickAdd'
 import { TaskRow } from '../components/TaskRow'
 import { TaskSheet } from '../components/TaskSheet'
-import { Button, Card, Eyebrow, Muted, Page, Stat } from '../components/ui'
+import { Button, Card, Col, Columns, Eyebrow, Muted, Page, Stat } from '../components/ui'
 import { fmtDate, fmtMonth, useT, type Key } from '../i18n'
 import { monthDays, monthGrid, monthOf, monthRange, relation, shiftMonth } from '../lib/calendar'
 import { byOrder, db } from '../lib/db'
@@ -74,6 +74,8 @@ export function CalendarScreen({ today, settings, now, onGoToday }: { today: ISO
 
   return (
     <Page title={t('cal.title')} subtitle={t('cal.subtitle')}>
+      <Columns cols="5/7">
+      <Col className="lg:sticky lg:top-6">
       <Card>
         <div className="mb-3 flex items-center justify-between">
           <Button variant="ghost" size="sm" aria-label="prev" onClick={() => { setYM(shiftMonth(year, month, -1)); setSelected(null) }}><ChevronLeft size={18} /></Button>
@@ -114,6 +116,8 @@ export function CalendarScreen({ today, settings, now, onGoToday }: { today: ISO
         )}
       </Card>
 
+      </Col>
+      <Col>
       {selected && selRel && (
         <Card className="animate-rise">
           <div className="flex items-center justify-between">
@@ -154,7 +158,7 @@ export function CalendarScreen({ today, settings, now, onGoToday }: { today: ISO
           </div>
         </div>
         <Muted>{t('cal.stats.hint', { n: days.length })}</Muted>
-        <div className="mt-3 grid grid-cols-2 gap-2">
+        <div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-3">
           <Stat label={t('cal.m.tasks')} value={`${done}/${monthTasks.length}`} note={monthTasks.length ? `${pct}%` : undefined} />
           <Stat label={t('cal.m.mit')} value={`${mitDays}/${days.length}`} />
           <Stat label={t('cal.m.focus')} value={focusTotal >= 60 ? `${Math.floor(focusTotal / 60)}h${String(focusTotal % 60).padStart(2, '0')}` : `${focusTotal}′`} />
@@ -166,6 +170,8 @@ export function CalendarScreen({ today, settings, now, onGoToday }: { today: ISO
           <BarChart series={series} today={today} lang={lang} />
         </div>
       </Card>
+      </Col>
+      </Columns>
 
       {editing && <TaskSheet task={editing} today={today} onClose={() => setEditing(null)} />}
     </Page>

@@ -50,7 +50,7 @@ export const vi = {
   'sheet.goal': 'Mục tiêu',
   'sheet.goal.none': 'Không gắn',
   'sheet.save': 'Lưu',
-  'quick.ph': 'Thêm việc… (#w #p !1–!4 ~30)',
+  'quick.ph': 'Thêm việc…',
   'quick.hint': '#w công việc · #p cá nhân · !1–!4 ma trận · ~30 phút',
   'today.progressBar': '{done}/{total} xong · {min}′ tập trung',
   'today.pickMit': 'Chưa chọn việc quan trọng nhất. Chạm ★ ở một việc.',
@@ -62,7 +62,7 @@ export const vi = {
   'morn.count': '{n} việc hôm nay',
   'morn.enter': 'Vào ngày',
   'morn.newMit': 'Tạo việc quan trọng nhất…',
-  'morn.pickMitHint': 'Chọn một việc quan trọng nhất để có nút Bắt đầu 10 phút. Không bắt buộc.',
+  'morn.pickMitHint': 'Chạm ★ ở một việc để có nút Bắt đầu với hẹn giờ. Không bắt buộc.',
 
   // plan
   'nav.plan': 'Kế hoạch',
@@ -206,18 +206,26 @@ export const vi = {
   'timer.breakOver': 'Hết giờ nghỉ.',
   'timer.resume': 'Quay lại việc',
   'timer.skipBreak': 'Bỏ nghỉ, làm tiếp',
+  'timer.addMore': '+{n}′',
+  'focus.howLong': 'Tập trung bao lâu?',
+  'focus.custom': 'Khác',
+  'focus.customPh': 'phút',
+  'focus.est': 'ước lượng',
+  'focus.on': 'Tập trung vào',
+  'morn.others': '{n} việc khác hôm nay',
+  'nav.shutdown': 'Đóng ngày',
 
   // parking
   'park.title': 'Parking Lot',
   'park.saved': 'Đã ghi. Quay lại việc.',
   'park.pending': '{n} ý chờ xử lý lúc đóng ngày',
-  'park.hint': 'Ý tưởng xen vào → ghi, không switch',
+  'park.hint': 'Ý xen vào → ghi, không switch',
   'park.placeholder': 'Gõ rồi Enter…',
 
   // task form
   'form.heading': 'Việc',
-  'form.goal': 'Phục vụ mục tiêu tuần',
-  'form.goal.none': 'Ngoài mục tiêu tuần',
+  'form.goal': 'Phục vụ mục tiêu',
+  'form.goal.none': 'Không gắn mục tiêu',
   'form.title': 'Việc',
   'form.title.ph': 'Làm 20 câu S3',
   'form.title.hint': 'Động từ + thứ đếm được thì dễ xong hơn.',

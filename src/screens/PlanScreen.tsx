@@ -24,7 +24,7 @@ export function PlanScreen({ today, settings }: { today: ISODate; settings: Sett
   const [editing, setEditing] = useState<Task | null>(null)
   const seg = (m: Mode, label: string) => (
     <button
-      className={`flex-1 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${mode === m ? 'bg-ink text-paper' : 'text-ink-2 hover:bg-paper-3/60'}`}
+      className={`flex-1 rounded-lg px-4 py-1.5 text-sm font-medium transition-colors sm:min-w-28 ${mode === m ? 'bg-ink text-paper' : 'text-ink-2 hover:bg-paper-3/60'}`}
       onClick={() => setMode(m)}
     >
       {label}
@@ -32,7 +32,7 @@ export function PlanScreen({ today, settings }: { today: ISODate; settings: Sett
   )
   return (
     <Page title={t('plan.title')} subtitle={t('plan.subtitle')}>
-      <div className="flex gap-1 rounded-xl bg-paper-2/70 p-1 ring-1 ring-line">
+      <div className="flex gap-1 rounded-xl bg-paper-2/70 p-1 ring-1 ring-line sm:self-start">
         {seg('matrix', t('plan.matrix'))}
         {seg('week', t('plan.week'))}
       </div>
@@ -83,7 +83,7 @@ function MatrixView({ today, settings, onEdit }: { today: ISODate; settings: Set
   const Cell = ({ q }: { q: Quadrant }) => {
     const items = byQ(q)
     return (
-      <DropZone id={q} className={`flex min-h-28 flex-col rounded-2xl p-2.5 ring-1 ring-line transition-colors ${q === 'q1' ? 'bg-bad/5' : q === 'q2' ? 'bg-accent-soft/40' : 'bg-paper-2/60'}`}>
+      <DropZone id={q} className={`flex min-h-28 flex-col rounded-2xl p-2.5 ring-1 ring-line transition-colors lg:min-h-48 lg:p-3 ${q === 'q1' ? 'bg-bad/5' : q === 'q2' ? 'bg-accent-soft/40' : 'bg-paper-2/60'}`}>
         <div className="mb-1.5 flex items-baseline justify-between gap-1">
           <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${quadrantTone[q]}`}>{q.toUpperCase()} · {t(`q.${q}`)}</span>
           <span className="text-[11px] text-ink-3">{items.length}</span>
@@ -102,68 +102,80 @@ function MatrixView({ today, settings, onEdit }: { today: ISODate; settings: Set
     )
   }
 
+  const filter = (
+    <div className="flex gap-1">
+      {(['all', 'work', 'personal'] as AreaFilter[]).map((a) => (
+        <button key={a} className={`rounded-full px-3 py-1 text-xs font-medium ${area === a ? 'bg-ink text-paper' : 'bg-paper-3/70 text-ink-2'}`} onClick={() => setArea(a)}>
+          {a === 'all' ? t('plan.all') : t(`area.${a}`)}
+        </button>
+      ))}
+      <span className="flex-1" />
+      <Muted className="self-center">{visible.length} {t('plan.inBacklog')}</Muted>
+    </div>
+  )
+  const inboxCard = inbox.length > 0 && (
+    <Card className="py-3">
+      <Eyebrow className="mb-2 flex items-center gap-1"><Inbox size={12} />{t('plan.inbox', { n: inbox.length })}</Eyebrow>
+      <Muted className="mb-2">{t('plan.inbox.hint')}</Muted>
+      <ul className="flex flex-col gap-1.5">
+        {inbox.map((p) => (
+          <li key={p.id} className="flex items-center gap-2 rounded-xl bg-paper/70 px-2 py-1.5 ring-1 ring-line">
+            <DragItem id={`park:${p.id}`} className="min-w-0 flex-1 cursor-grab">
+              <span className="block truncate text-[14px]">{p.text}</span>
+            </DragItem>
+            <span className="flex shrink-0 gap-0.5">
+              {QUADRANTS.map((q) => (
+                <button key={q} className={`rounded px-1 text-[10px] font-semibold ${quadrantTone[q]}`} onClick={() => void promoteToTask(p.id, { area: area === 'all' ? settings.defaultArea : area, quadrant: q })}>
+                  {q.toUpperCase()}
+                </button>
+              ))}
+            </span>
+            <button aria-label={t('common.delete')} className="shrink-0 rounded p-1 text-ink-3 hover:text-bad" onClick={() => void deleteParking(p.id)}><X size={14} /></button>
+          </li>
+        ))}
+      </ul>
+    </Card>
+  )
+  const addCard = (
+    <Card className="py-3">
+      <Eyebrow className="mb-2">{t('plan.addBacklog')}</Eyebrow>
+      <QuickAdd defaultArea={area === 'all' ? settings.defaultArea : area} />
+    </Card>
+  )
+
   return (
     <DragBoard onDrop={(a, z) => void onDrop(a, z)} renderOverlay={overlay}>
-      <div className="flex gap-1">
-        {(['all', 'work', 'personal'] as AreaFilter[]).map((a) => (
-          <button key={a} className={`rounded-full px-3 py-1 text-xs font-medium ${area === a ? 'bg-ink text-paper' : 'bg-paper-3/70 text-ink-2'}`} onClick={() => setArea(a)}>
-            {a === 'all' ? t('plan.all') : t(`area.${a}`)}
-          </button>
-        ))}
-        <span className="flex-1" />
-        <Muted className="self-center">{visible.length} {t('plan.inBacklog')}</Muted>
+      {/* Điện thoại: một cột theo order-*; màn rộng: ma trận trái, thêm/inbox phải (sticky). */}
+      <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:items-start lg:gap-6">
+        <div className="contents lg:flex lg:min-w-0 lg:flex-col lg:gap-4">
+          <div className="order-1 lg:order-none">{filter}</div>
+          {backlog.length > BACKLOG_NUDGE && <Card tone="accent" className="order-2 lg:order-none"><p className="text-sm text-ink-2">{t('plan.nudge', { n: backlog.length })}</p></Card>}
+
+          <div className="order-4 grid grid-cols-2 gap-2 lg:order-none lg:gap-3">
+            <Cell q="q1" /><Cell q="q2" /><Cell q="q3" /><Cell q="q4" />
+          </div>
+
+          {byQ(undefined).length > 0 && (
+            <DropZone id="unsorted" className="order-5 rounded-2xl bg-paper-2/40 p-2.5 ring-1 ring-dashed ring-line lg:order-none">
+              <Eyebrow className="mb-1.5">{t('q.none')} · {byQ(undefined).length}</Eyebrow>
+              <ul className="flex flex-col gap-1">
+                {byQ(undefined).map((x) => (
+                  <li key={x.id}><DragItem id={`task:${x.id}`}><TaskRow task={x} today={today} onEdit={onEdit} showStar={false} compact /></DragItem></li>
+                ))}
+              </ul>
+            </DropZone>
+          )}
+
+          <div className="order-6 grid grid-cols-2 gap-2 lg:order-none">
+            <DropZone id="today" className="rounded-xl border border-dashed border-line p-3 text-center text-sm text-ink-2">{t('plan.dropToday')}</DropZone>
+            <DropZone id="tomorrow" className="rounded-xl border border-dashed border-line p-3 text-center text-sm text-ink-2">{t('plan.dropTomorrow')}</DropZone>
+          </div>
+        </div>
+        <div className="contents lg:sticky lg:top-6 lg:flex lg:min-w-0 lg:flex-col lg:gap-4">
+          <div className="order-7 lg:order-none">{addCard}</div>
+          {inboxCard && <div className="order-3 lg:order-none">{inboxCard}</div>}
+        </div>
       </div>
-
-      {inbox.length > 0 && (
-        <Card className="py-3">
-          <Eyebrow className="mb-2 flex items-center gap-1"><Inbox size={12} />{t('plan.inbox', { n: inbox.length })}</Eyebrow>
-          <Muted className="mb-2">{t('plan.inbox.hint')}</Muted>
-          <ul className="flex flex-col gap-1.5">
-            {inbox.map((p) => (
-              <li key={p.id} className="flex items-center gap-2 rounded-xl bg-paper/70 px-2 py-1.5 ring-1 ring-line">
-                <DragItem id={`park:${p.id}`} className="min-w-0 flex-1 cursor-grab">
-                  <span className="block truncate text-[14px]">{p.text}</span>
-                </DragItem>
-                <span className="flex shrink-0 gap-0.5">
-                  {QUADRANTS.map((q) => (
-                    <button key={q} className={`rounded px-1 text-[10px] font-semibold ${quadrantTone[q]}`} onClick={() => void promoteToTask(p.id, { area: area === 'all' ? settings.defaultArea : area, quadrant: q })}>
-                      {q.toUpperCase()}
-                    </button>
-                  ))}
-                </span>
-                <button aria-label={t('common.delete')} className="shrink-0 rounded p-1 text-ink-3 hover:text-bad" onClick={() => void deleteParking(p.id)}><X size={14} /></button>
-              </li>
-            ))}
-          </ul>
-        </Card>
-      )}
-
-      {backlog.length > BACKLOG_NUDGE && <Card tone="accent"><p className="text-sm text-ink-2">{t('plan.nudge', { n: backlog.length })}</p></Card>}
-
-      <div className="grid grid-cols-2 gap-2">
-        <Cell q="q1" /><Cell q="q2" /><Cell q="q3" /><Cell q="q4" />
-      </div>
-
-      {byQ(undefined).length > 0 && (
-        <DropZone id="unsorted" className="rounded-2xl bg-paper-2/40 p-2.5 ring-1 ring-dashed ring-line">
-          <Eyebrow className="mb-1.5">{t('q.none')} · {byQ(undefined).length}</Eyebrow>
-          <ul className="flex flex-col gap-1">
-            {byQ(undefined).map((x) => (
-              <li key={x.id}><DragItem id={`task:${x.id}`}><TaskRow task={x} today={today} onEdit={onEdit} showStar={false} compact /></DragItem></li>
-            ))}
-          </ul>
-        </DropZone>
-      )}
-
-      <div className="grid grid-cols-2 gap-2">
-        <DropZone id="today" className="rounded-xl border border-dashed border-line p-3 text-center text-sm text-ink-2">{t('plan.dropToday')}</DropZone>
-        <DropZone id="tomorrow" className="rounded-xl border border-dashed border-line p-3 text-center text-sm text-ink-2">{t('plan.dropTomorrow')}</DropZone>
-      </div>
-
-      <Card className="py-3">
-        <Eyebrow className="mb-2">{t('plan.addBacklog')}</Eyebrow>
-        <QuickAdd defaultArea={area === 'all' ? settings.defaultArea : area} />
-      </Card>
     </DragBoard>
   )
 }
@@ -194,55 +206,57 @@ function WeekBoard({ today, settings, onEdit }: { today: ISODate; settings: Sett
 
   return (
     <DragBoard onDrop={(a, z) => void onDrop(a, z)} renderOverlay={overlay}>
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between lg:justify-start lg:gap-2">
         <Button variant="ghost" size="sm" onClick={() => setWs(addDays(ws, -7))}><ChevronLeft size={16} /></Button>
         <span className="font-display text-lg">{periodLabel(weekKey(ws), lang)}</span>
         <Button variant="ghost" size="sm" onClick={() => setWs(addDays(ws, 7))}><ChevronRight size={16} /></Button>
       </div>
 
-      {days.map((d) => {
-        const list = tasks.filter((x) => x.scheduledFor === d).sort(byOrder)
-        const past = d < today
-        const doneN = list.filter((x) => x.status === 'done').length
-        return (
-          <DropZone key={d} id={d} className={`rounded-2xl p-3 ring-1 ring-line ${d === today ? 'bg-accent-soft/40' : 'bg-paper-2/60'} ${past ? 'opacity-70' : ''}`} activeClassName={past ? '' : 'ring-2 ring-accent/60'}>
-            <div className="mb-1.5 flex items-baseline justify-between">
-              <span className={`text-sm font-semibold ${d === today ? 'text-accent' : ''}`}>{fmtDate(lang, d)}{d === today ? ` · ${t('cal.today')}` : ''}</span>
-              <span className="text-[11px] text-ink-3">{list.length ? `${doneN}/${list.length}` : ''}</span>
-            </div>
-            <ul className="flex flex-col gap-1">
-              {list.map((x) => (
-                <li key={x.id}>
-                  <DragItem id={`task:${x.id}`} disabled={past || x.status === 'done'}>
-                    <TaskRow task={x} today={today} onEdit={onEdit} compact readOnly={past} />
-                  </DragItem>
-                </li>
-              ))}
-            </ul>
-            {!past && (
-              adding === d ? (
-                <div className="mt-2"><QuickAdd scheduledFor={d} defaultArea={settings.defaultArea} onCreated={() => setAdding(null)} /></div>
-              ) : (
-                <button className="mt-1.5 flex items-center gap-1 text-xs text-ink-3 hover:text-ink" onClick={() => setAdding(d)}><Plus size={12} />{t('common.add')}</button>
-              )
-            )}
-          </DropZone>
-        )
-      })}
+      <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-4 lg:gap-3">
+        {days.map((d) => {
+          const list = tasks.filter((x) => x.scheduledFor === d).sort(byOrder)
+          const past = d < today
+          const doneN = list.filter((x) => x.status === 'done').length
+          return (
+            <DropZone key={d} id={d} className={`flex min-h-24 flex-col rounded-2xl p-3 ring-1 ring-line lg:min-h-40 ${d === today ? 'bg-accent-soft/40' : 'bg-paper-2/60'} ${past ? 'opacity-70' : ''}`} activeClassName={past ? '' : 'ring-2 ring-accent/60'}>
+              <div className="mb-1.5 flex items-baseline justify-between">
+                <span className={`text-sm font-semibold ${d === today ? 'text-accent' : ''}`}>{fmtDate(lang, d)}{d === today ? ` · ${t('cal.today')}` : ''}</span>
+                <span className="text-[11px] text-ink-3">{list.length ? `${doneN}/${list.length}` : ''}</span>
+              </div>
+              <ul className="flex flex-col gap-1">
+                {list.map((x) => (
+                  <li key={x.id}>
+                    <DragItem id={`task:${x.id}`} disabled={past || x.status === 'done'}>
+                      <TaskRow task={x} today={today} onEdit={onEdit} compact readOnly={past} />
+                    </DragItem>
+                  </li>
+                ))}
+              </ul>
+              {!past && (
+                adding === d ? (
+                  <div className="mt-2"><QuickAdd scheduledFor={d} defaultArea={settings.defaultArea} onCreated={() => setAdding(null)} /></div>
+                ) : (
+                  <button className="mt-auto flex items-center gap-1 pt-1.5 text-xs text-ink-3 hover:text-ink" onClick={() => setAdding(d)}><Plus size={12} />{t('common.add')}</button>
+                )
+              )}
+            </DropZone>
+          )
+        })}
 
-      <DropZone id="backlog" className="rounded-2xl border border-dashed border-line p-3">
-        <Eyebrow className="mb-1.5">{t('plan.backlogZone', { n: backlog.length })}</Eyebrow>
-        <ul className="flex flex-col gap-1">
-          {backlog.filter(isOpen).slice(0, 8).map((x) => (
-            <li key={x.id}>
-              <DragItem id={`task:${x.id}`}>
-                <div className="flex items-center gap-2 rounded-lg bg-paper/70 px-2 py-1.5 text-sm ring-1 ring-line"><QuadrantChip q={x.quadrant} /><span className="truncate">{x.title}</span></div>
-              </DragItem>
-            </li>
-          ))}
-        </ul>
-        {backlog.length > 8 && <Muted className="mt-1">+{backlog.length - 8} …</Muted>}
-      </DropZone>
+        <DropZone id="backlog" className="rounded-2xl border border-dashed border-line p-3">
+          <Eyebrow className="mb-1.5">{t('plan.backlogZone', { n: backlog.length })}</Eyebrow>
+          <ul className="flex flex-col gap-1">
+            {backlog.filter(isOpen).slice(0, 8).map((x) => (
+              <li key={x.id}>
+                <DragItem id={`task:${x.id}`}>
+                  <div className="flex items-center gap-2 rounded-lg bg-paper/70 px-2 py-1.5 text-sm ring-1 ring-line"><QuadrantChip q={x.quadrant} /><span className="truncate">{x.title}</span></div>
+                </DragItem>
+              </li>
+            ))}
+          </ul>
+          {backlog.length > 8 && <Muted className="mt-1">+{backlog.length - 8} …</Muted>}
+        </DropZone>
+      </div>
     </DragBoard>
   )
 }

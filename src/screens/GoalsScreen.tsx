@@ -1,7 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useState } from 'react'
 import { ChevronLeft, ChevronRight, Flag } from 'lucide-react'
-import { Button, Card, Eyebrow, Input, Muted, Page, Stat } from '../components/ui'
+import { Button, Card, Columns, Eyebrow, Input, Muted, Page, Stat } from '../components/ui'
 import { useT } from '../i18n'
 import { addGoal, checkinGoal, goalsFor, setGoalStatus, SOFT_MAX_WEEK_GOALS } from '../lib/actions'
 import { db } from '../lib/db'
@@ -125,7 +125,7 @@ function PeriodSection({ horizon, periodKey, onShift, today, tasks, defaultArea 
           <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t(`goal.ph.${horizon}`)} onKeyDown={(e) => e.key === 'Enter' && void add()} />
           <button
             type="button"
-            className={`shrink-0 rounded-xl px-2.5 text-[11px] font-semibold uppercase tracking-wide ${area === 'work' ? 'bg-ink text-paper' : 'bg-paper-3 text-ink-2'}`}
+            className={`shrink-0 rounded-xl px-2 text-[10px] font-semibold uppercase tracking-wide ${area === 'work' ? 'bg-ink text-paper' : 'bg-paper-3 text-ink-2'}`}
             onClick={() => setArea((a) => (a === 'work' ? 'personal' : 'work'))}
           >
             {t(`area.${area}`)}
@@ -159,7 +159,7 @@ function WeekReview({ periodKey, today, settings, nowMs, tasks }: { periodKey: s
     <Card>
       <h2 className="font-display text-xl">{t('week.review')}</h2>
       <Muted>{t('week.review.hint', { n: m.daysCounted })}</Muted>
-      <div className="mt-3 grid grid-cols-2 gap-2">
+      <div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-6">
         <Stat label={t('goal.m.tasks')} value={`${doneN}/${inWeek.length}`} note={inWeek.length ? `${pct}%` : undefined} />
         <Stat label={t('week.m.focus', { n: settings.minFocusMin })} value={`${m.daysWithFocus}/${m.daysCounted}`} />
         <Stat label={t('week.m.shutdown')} value={`${m.shutdownOnTime}/${m.daysCounted}`} note={t('week.m.shutdown.note', { n: m.daysClosed })} />
@@ -180,9 +180,11 @@ export function GoalsScreen({ today, settings, now }: { today: ISODate; settings
 
   return (
     <Page title={t('goal.title')} subtitle={t('goal.subtitle')}>
+      <Columns cols="1/1/1">
       <PeriodSection horizon="week" periodKey={week} onShift={(b) => setWeek(shiftPeriod(week, b))} today={today} tasks={tasks} defaultArea={settings.defaultArea} />
       <PeriodSection horizon="quarter" periodKey={quarter} onShift={(b) => setQuarter(shiftPeriod(quarter, b))} today={today} tasks={tasks} defaultArea={settings.defaultArea} />
       <PeriodSection horizon="year" periodKey={year} onShift={(b) => setYear(shiftPeriod(year, b))} today={today} tasks={tasks} defaultArea={settings.defaultArea} />
+      </Columns>
       <WeekReview periodKey={week} today={today} settings={settings} nowMs={now.getTime()} tasks={tasks} />
     </Page>
   )

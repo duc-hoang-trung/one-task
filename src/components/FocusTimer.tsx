@@ -87,7 +87,10 @@ export function FocusTimer({
           <Button variant="ghost" onClick={() => void endSession(session.id, nowMs)}>{t('timer.stop')}</Button>
         </div>
       ) : (
-        <Button variant="ghost" size="sm" onClick={() => void endSession(session.id, nowMs)}>{t('timer.stopEarly')}</Button>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="sm" onClick={() => void extendSession(session.id, settings.extendMin)}>{t('timer.addMore', { n: settings.extendMin })}</Button>
+          <Button variant="ghost" size="sm" onClick={() => void endSession(session.id, nowMs)}>{t('timer.stopEarly')}</Button>
+        </div>
       )}
     </div>
   )

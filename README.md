@@ -1,7 +1,7 @@
 # Một Việc · One Task
 
 Hệ quản lý cá nhân local-first: **mọi đầu việc trong ngày (Công việc / Cá nhân), Backlog theo ma trận Eisenhower, mục tiêu tuần / quý / năm có check-in, lịch và thống kê tháng**.
-Bên trong vẫn giữ lớp chống trì hoãn của bản đầu: mỗi ngày có thể gắn ★ một **việc quan trọng nhất (MIT)** với timer 10 phút, câu hậu quả tự viết, huỷ có ma sát; **đóng ngày** 5 bước và **night mode** khoá tới sáng.
+Bên trong vẫn giữ lớp chống trì hoãn của bản đầu: mỗi ngày có thể gắn ★ một **việc quan trọng nhất (MIT)** với timer chọn được thời lượng (mặc định 10 phút), câu hậu quả tự viết, huỷ có ma sát; **đóng ngày** 5 bước và **night mode** khoá tới sáng.
 PWA cài lên điện thoại, tiếng Việt / English, đồng bộ cloud tuỳ chọn qua Supabase free.
 
 Tài liệu: [01 · nghiên cứu](docs/01-research.md) · [02 · brainstorm](docs/02-brainstorm.md) · [03 · plan](docs/03-plan.md) · [parking lot của dự án](docs/parking-lot.md)
@@ -14,9 +14,15 @@ Tài liệu: [01 · nghiên cứu](docs/01-research.md) · [02 · brainstorm](do
 |---|---|---|---|
 | ![](docs/screenshots/15-calendar-planned.png) | ![](docs/screenshots/03-morning.png) | ![](docs/screenshots/08-shutdown-step2.png) | ![](docs/screenshots/10-night-dark.png) |
 
+Trên màn rộng (≥1024px) điều hướng chuyển sang sidebar trái và mỗi tab chia cột để dùng hết bề ngang:
+
+| Hôm nay | Kế hoạch · Ma trận | Kế hoạch · Tuần |
+|---|---|---|
+| ![](docs/screenshots/11b-today-list-wide.png) | ![](docs/screenshots/16-plan-matrix-wide.png) | ![](docs/screenshots/17-plan-week-wide.png) |
+
 ## Năm tab
 
-1. **Hôm nay**: MIT (nếu có) với timer đếm ngược, DoD, hậu quả, Huỷ…; danh sách việc trong ngày nhóm Công việc / Cá nhân, kéo thả sắp thứ tự, ▶ tập trung cho bất kỳ việc nào, thêm nhanh `Trả lời mail #w !3 ~20`, thanh tiến độ, Parking Lot ghi nhanh. Hết 10 phút app hỏi "thêm 15?"; tập trung liền 25 phút thì gợi ý nghỉ 5.
+1. **Hôm nay**: MIT (nếu có) với timer đếm ngược, DoD, hậu quả, Huỷ…; danh sách việc trong ngày nhóm Công việc / Cá nhân, kéo thả sắp thứ tự, ▶ tập trung cho bất kỳ việc nào (chọn 10 / 25 / 45 / 60 phút, ước lượng của việc, hoặc nhập số khác; app nhớ lần chọn cuối), thêm nhanh `Trả lời mail #w !3 ~20`, thanh tiến độ, Parking Lot ghi nhanh. Đang chạy có nút +15; hết giờ app hỏi "thêm 15?"; tập trung liền 25 phút thì gợi ý nghỉ 5.
 2. **Kế hoạch**: *Ma trận* Eisenhower cho Backlog (kéo giữa 4 ô, kéo vào "Hôm nay"/"Mai" để lên lịch), *Inbox* từ Parking Lot (kéo vào ô hoặc chạm Q1–Q4 để thành việc), bộ lọc khu vực, nhắc khi Backlog quá 30. *Tuần*: 7 ngày xếp dọc, kéo việc giữa ngày hoặc về Backlog.
 3. **Lịch**: ô ngày hiện xong/tổng, xong hết tô đậm, chấm xanh đóng ngày đúng giờ, chấm đỏ ngủ muộn. Chạm ngày quá khứ xem việc + phút tập trung + giờ đóng + giờ ngủ; ngày tới thêm việc ngay. Bên dưới: thống kê tháng (lọc khu vực) và biểu đồ cột việc xong mỗi ngày.
 4. **Mục tiêu**: Tuần ▸ Quý ▸ Năm, gắn mục tiêu con vào mục tiêu cha, đếm việc gắn, **check-in** đúng hướng / chậm / kẹt kèm một dòng ghi chú, nhắc khi quá hạn check-in hoặc quá 3 mục tiêu tuần. Review tuần: việc xong / tổng, ngày có ≥10′ MIT, đóng ngày đúng giờ, ngủ so mục tiêu, số lần quay lại sau ngày trống, số lần dời việc.
@@ -24,7 +30,7 @@ Tài liệu: [01 · nghiên cứu](docs/01-research.md) · [02 · brainstorm](do
 
 ## Nghi thức ngày
 
-- **Sáng**: nếu có MIT, một dòng *bước đầu tiên* + "Bắt đầu 10 phút" hoặc "Huỷ…" (đọc lại hậu quả 5 giây). Nếu chưa: danh sách hôm nay để gắn ★ rồi "Vào ngày". Hỏi giờ ngủ hôm qua.
+- **Sáng**: nếu có MIT, một dòng *bước đầu tiên* + chip thời lượng + "Bắt đầu N phút" hoặc "Huỷ…" (đọc lại hậu quả 5 giây). Nếu chưa: danh sách hôm nay để gắn ★ rồi "Vào ngày". Hỏi giờ ngủ hôm qua.
 - **Đóng ngày** (mặc định 21:00, có thông báo): (1) rà mọi việc chưa xong: xong / sang mai / về Backlog / bỏ, không được để treo; (2) chốt danh sách mai, gắn ★, gợi ý từ Backlog Q1–Q2; (3) Parking Lot về 0: thành việc hoặc xoá; (4) một lo lắng + một bước tiếp theo; (5) đóng.
 - **Night mode**: khoá tới 04:00, chỉ còn ô Parking Lot và tóm tắt ngày mai.
 

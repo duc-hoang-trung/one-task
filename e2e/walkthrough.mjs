@@ -6,12 +6,13 @@ import { chromium } from 'playwright'
 const BASE = process.env.BASE_URL ?? 'http://localhost:4173/'
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {})
 const dark = process.env.DARK === '1'
-const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, locale: 'vi-VN', colorScheme: dark ? 'dark' : 'light' })
+const wide = process.env.WIDE === '1'   // màn rộng: sidebar + nhiều cột
+const ctx = await browser.newContext({ viewport: wide ? { width: 1440, height: 900 } : { width: 390, height: 844 }, deviceScaleFactor: wide ? 1 : 2, locale: 'vi-VN', colorScheme: dark ? 'dark' : 'light' })
 const page = await ctx.newPage()
 const errors = []
 page.on('pageerror', (e) => errors.push(String(e)))
 page.on('console', (m) => m.type() === 'error' && !/Failed to load resource/.test(m.text()) && errors.push(m.text()))
-const shot = (n) => page.screenshot({ path: `e2e/shots/${n}${dark ? '-dark' : ''}.png`, fullPage: true })
+const shot = (n) => page.screenshot({ path: `e2e/shots/${n}${dark ? '-dark' : ''}${wide ? '-wide' : ''}.png`, fullPage: true })
 const go = async (d, t) => { await page.goto(`${BASE}?d=${d}&t=${t}`); await page.waitForTimeout(400) }
 const expectText = async (t) => {
   try { await page.getByText(t, { exact: false }).filter({ visible: true }).first().waitFor({ state: 'visible', timeout: 3000 }) }
@@ -80,7 +81,7 @@ await boxes.nth(0).click(); await page.waitForTimeout(200); await boxes.nth(1).c
 await page.getByRole('button', { name: 'Đóng việc này' }).click()
 await expectText('Đã xong (1)')
 await shot('07-today-done')
-await page.getByRole('button', { name: 'Đóng ngày', exact: true }).click()
+await page.getByRole('button', { name: 'Đóng ngày', exact: true }).last().click()
 
 // 7. Shutdown: review today (clean) → plan tomorrow (create MIT via full form) → parking → worry → close
 await expectText('Rà việc hôm nay')
@@ -103,7 +104,7 @@ await page.getByPlaceholder(/Sợ không kịp/).fill('Sợ deadline báo cáo t
 await page.getByPlaceholder(/Sáng mai gửi mail/).fill('Sáng mai gửi mail hỏi anh A số liệu')
 await shot('09-shutdown-worry')
 await page.getByRole('button', { name: 'Tiếp' }).click()
-await page.getByRole('button', { name: 'Đóng ngày', exact: true }).click()
+await page.getByRole('button', { name: 'Đóng ngày', exact: true }).last().click()
 
 // 8. Night mode
 await expectText('Đã đóng ngày')
@@ -134,6 +135,21 @@ await expectText('Đi siêu thị')
 await expectText('0/4 xong')
 await expectText('Hỏi HR về bảo hiểm')
 await shot('11b-today-list')
+
+// 10b. ▶ on a secondary task → pick a duration (25′) → timer runs for that task, MIT card stays
+await page.getByLabel('Tập trung', { exact: true }).first().click()
+await expectText('Tập trung bao lâu?')
+await page.getByRole('dialog').getByRole('button', { name: '25′', exact: true }).click()
+await page.getByRole('dialog').getByRole('button', { name: 'Bắt đầu 25 phút' }).click()
+await expectText('Đang tập trung: Hỏi HR về bảo hiểm')
+await expectText('còn / 25')
+await shot('11c-focus-other')
+await page.getByRole('button', { name: 'Dừng sớm' }).click()
+await page.waitForTimeout(200)
+// MIT card offers duration chips again; "Khác" lets you type any number
+await page.getByRole('button', { name: 'Khác', exact: true }).click()
+await page.getByLabel('phút').fill('12')
+await expectText('Bắt đầu 12 phút')
 
 // 11. Goals: week goal + quarter goal + check-in + review
 await page.getByRole('button', { name: 'Mục tiêu' }).click()

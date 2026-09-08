@@ -3,17 +3,18 @@ import { useState } from 'react'
 import { useT } from '../i18n'
 import { createTask, type NewTaskInput } from '../lib/actions'
 import { goalsFor } from '../lib/actions'
-import { weekKey } from '../lib/period'
+import { quarterKey, weekKey } from '../lib/period'
 import type { ISODate } from '../lib/dates'
+import { QUADRANTS, type Area, type Quadrant } from '../lib/types'
 import { checkTitle, MAX_ESTIMATE_MIN } from '../lib/vagueness'
-import { Button, Field, Input, Textarea } from './ui'
+import { Button, Field, Input, Segmented, Select, Textarea } from './ui'
 
 /**
- * Form tạo việc chính. Chỉ tên việc là bắt buộc. Các trường khác tuỳ chọn, gợi ý ngắn.
+ * Form tạo việc đầy đủ (mặc định gắn ★). Chỉ tên việc là bắt buộc; các trường khác tuỳ chọn, gợi ý ngắn.
  * Bộ lọc mơ hồ chỉ gợi ý mềm, không chặn.
  */
 export function TaskForm({
-  scheduledFor, heading, onCreated, onCancel, compact = false, asMain = true,
+  scheduledFor, heading, onCreated, onCancel, compact = false, asMain = true, defaultArea = 'work',
 }: {
   scheduledFor: ISODate
   heading?: string
@@ -22,13 +23,16 @@ export function TaskForm({
   compact?: boolean
   /** Gắn sao việc quan trọng nhất của ngày ngay khi tạo. */
   asMain?: boolean
+  defaultArea?: Area
 }) {
   const { t } = useT()
   const goals = useLiveQuery(
-    async () => (await goalsFor(weekKey(scheduledFor))).filter((g) => g.status === 'open'),
+    async () => [...(await goalsFor(weekKey(scheduledFor))), ...(await goalsFor(quarterKey(scheduledFor)))].filter((g) => g.status === 'open'),
     [scheduledFor], [],
   )
   const [title, setTitle] = useState('')
+  const [area, setArea] = useState<Area>(defaultArea)
+  const [quadrant, setQuadrant] = useState<Quadrant | ''>('')
   const [dod, setDod] = useState('')
   const [consequence, setConsequence] = useState('')
   const [estimate, setEstimate] = useState('')
@@ -49,6 +53,8 @@ export function TaskForm({
     if (!title.trim()) return
     const input: NewTaskInput = {
       title,
+      area,
+      quadrant: quadrant || undefined,
       dod: dod.split('\n').map((s) => s.trim()).filter(Boolean),
       consequence,
       estimateMin: est > 0 ? est : undefined,
@@ -76,28 +82,40 @@ export function TaskForm({
         <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t('form.title.ph')} autoFocus />
       </Field>
 
+      <div className="grid grid-cols-2 gap-3">
+        <Field label={t('sheet.area')}>
+          <Segmented
+            value={area} onChange={setArea} className="w-full [&>button]:flex-1"
+            options={[{ value: 'work', label: t('area.work') }, { value: 'personal', label: t('area.personal') }]}
+          />
+        </Field>
+        <Field label={t('sheet.quadrant')}>
+          <Select value={quadrant} onChange={(e) => setQuadrant(e.target.value as Quadrant | '')}>
+            <option value="">{t('q.none')}</option>
+            {QUADRANTS.map((q) => <option key={q} value={q}>{q.toUpperCase()} · {t(`q.${q}`)}</option>)}
+          </Select>
+        </Field>
+      </div>
+
       <Field label={t('form.nextAction')} hint={t('form.nextAction.hint')}>
         <Input value={nextAction} onChange={(e) => setNextAction(e.target.value)} placeholder={t('form.nextAction.ph')} />
       </Field>
 
       {more ? (
         <>
-          {goals.length > 0 && (
-            <Field label={t('form.goal')}>
-              <div className="flex flex-col gap-2">
-                {goals.map((g) => (
-                  <label key={g.id} className={`flex cursor-pointer items-center gap-3 rounded-xl border px-3.5 py-2.5 transition-colors ${goalId === g.id ? 'border-accent bg-accent-soft/60' : 'border-line'}`}>
-                    <input type="radio" name="goal" className="accent-accent" value={g.id} checked={goalId === g.id} onChange={() => setGoalId(g.id)} />
-                    <span>{g.title}</span>
-                  </label>
-                ))}
-                <label className={`flex cursor-pointer items-center gap-3 rounded-xl border px-3.5 py-2.5 text-ink-2 ${goalId === '' ? 'border-accent bg-accent-soft/60' : 'border-line'}`}>
-                  <input type="radio" name="goal" className="accent-accent" value="" checked={goalId === ''} onChange={() => setGoalId('')} />
-                  <span>{t('form.goal.none')}</span>
-                </label>
-              </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label={t('form.estimate')} hint={estHint}>
+              <Input type="number" inputMode="numeric" min={5} value={estimate} onChange={(e) => setEstimate(e.target.value)} placeholder={t('form.estimate.ph')} />
             </Field>
-          )}
+            {goals.length > 0 && (
+              <Field label={t('form.goal')}>
+                <Select value={goalId} onChange={(e) => setGoalId(e.target.value)}>
+                  <option value="">{t('form.goal.none')}</option>
+                  {goals.map((g) => <option key={g.id} value={g.id}>{g.title}</option>)}
+                </Select>
+              </Field>
+            )}
+          </div>
 
           <Field label={t('form.dod')} hint={t('form.dod.hint')}>
             <Textarea value={dod} onChange={(e) => setDod(e.target.value)} placeholder={t('form.dod.ph')} />
@@ -105,10 +123,6 @@ export function TaskForm({
 
           <Field label={t('form.consequence')} hint={t('form.consequence.hint')}>
             <Input value={consequence} onChange={(e) => setConsequence(e.target.value)} placeholder={t('form.consequence.ph')} />
-          </Field>
-
-          <Field label={t('form.estimate')} hint={estHint}>
-            <Input type="number" inputMode="numeric" min={5} value={estimate} onChange={(e) => setEstimate(e.target.value)} placeholder={t('form.estimate.ph')} className="max-w-[10rem]" />
           </Field>
         </>
       ) : (
