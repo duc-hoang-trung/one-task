@@ -1,21 +1,24 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useState } from 'react'
-import { Check, Moon } from 'lucide-react'
+import { Check, ChevronDown, ChevronRight, Moon, Star } from 'lucide-react'
 import { CancelFlow } from '../components/CancelFlow'
+import { SortableItem, SortableList } from '../components/dnd/SortableList'
 import { FocusTimer } from '../components/FocusTimer'
 import { ParkingLot } from '../components/ParkingLot'
-import { TaskForm } from '../components/TaskForm'
+import { QuickAdd } from '../components/QuickAdd'
+import { TaskRow } from '../components/TaskRow'
+import { TaskSheet } from '../components/TaskSheet'
 import { Button, Card, Eyebrow, Muted, Page } from '../components/ui'
 import { fmtDate, useT } from '../i18n'
-import { completeTask, setDod, startSession, toggleParkingDone } from '../lib/actions'
-import { db } from '../lib/db'
+import { completeTask, reorderTasks, setDod, startSession } from '../lib/actions'
+import { db, isOpen, tasksFor } from '../lib/db'
 import type { ISODate } from '../lib/dates'
-import { focusMinutesByDate, focusStreakMin } from '../lib/metrics'
+import { focusMinutesByDate, focusStreakMin, sessionMinutes } from '../lib/metrics'
 import { isShutdownDue } from '../lib/phase'
-import type { Session, Settings, Task } from '../lib/types'
+import type { Area, Session, Settings, Task } from '../lib/types'
 
 export function TodayScreen({
-  today, task, session, settings, now, onShutdown,
+  today, task: mit, session, settings, now, onShutdown,
 }: {
   today: ISODate
   task?: Task
@@ -26,19 +29,41 @@ export function TodayScreen({
 }) {
   const { t, lang } = useT()
   const [cancelling, setCancelling] = useState(false)
+  const [editing, setEditing] = useState<Task | null>(null)
+  const [showDone, setShowDone] = useState(false)
+
+  const tasks = useLiveQuery(() => tasksFor(today), [today], [])
   const sessions = useLiveQuery(() => db.sessions.where('date').equals(today).toArray(), [today], [])
-  const focusMin = focusMinutesByDate(sessions, now.getTime()).get(today) ?? 0
-  const streak = focusStreakMin(sessions, now.getTime())
-  const smallTasks = useLiveQuery(() => db.parking.where('forDate').equals(today).filter((p) => !p.deleted).toArray(), [today], [])
-  const doneToday = useLiveQuery(
-    () => db.tasks.where('scheduledFor').equals(today).filter((x) => !x.deleted && x.status === 'done').toArray(), [today], [],
-  )
+  const nowMs = now.getTime()
+  const focusMin = focusMinutesByDate(sessions, nowMs).get(today) ?? 0
+  const streak = focusStreakMin(sessions, nowMs)
+  const minutesByTask = new Map<string, number>()
+  for (const s of sessions) if (s.kind !== 'break') minutesByTask.set(s.taskId, (minutesByTask.get(s.taskId) ?? 0) + sessionMinutes(s, nowMs))
+
+  const open = tasks.filter(isOpen)
+  const done = tasks.filter((x) => x.status === 'done')
   const due = isShutdownDue(now, settings.shutdownTime)
-  const unlockedSmall = focusMin >= settings.minFocusMin || doneToday.length > 0
-  const canClose = task ? task.dod.length === 0 || task.dod.every((d) => d.done) : false
+  const focusingTask = session && session.kind !== 'break' ? tasks.find((x) => x.id === session.taskId) : undefined
+  const timerOnMit = !!session && (!!mit && (session.taskId === mit.id || session.kind === 'break'))
+  const canCloseMit = mit ? mit.dod.length === 0 || mit.dod.every((d) => d.done) : false
+
+  const focus = (x: Task) => void startSession(x.id, today, settings.minFocusMin, nowMs)
+  const groups: { area: Area; items: Task[] }[] = (['work', 'personal'] as Area[])
+    .map((area) => ({ area, items: open.filter((x) => x.area === area) }))
+    .filter((g) => g.items.length > 0)
 
   return (
-    <Page subtitle={fmtDate(lang, today)} title={task ? t('today.oneThing') : doneToday.length ? t('today.mainDone') : t('today.title')}>
+    <Page subtitle={fmtDate(lang, today)} title={t('today.title')}>
+      {/* tiến độ */}
+      {tasks.length > 0 && (
+        <div>
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-paper-3">
+            <div className="h-full rounded-full bg-accent transition-[width]" style={{ width: `${(done.length / tasks.length) * 100}%` }} />
+          </div>
+          <Muted className="mt-1.5">{t('today.progressBar', { done: done.length, total: tasks.length, min: focusMin })}</Muted>
+        </div>
+      )}
+
       {due && (
         <Card tone="accent">
           <p className="font-medium">{t('today.shutdownDue', { t: settings.shutdownTime })}</p>
@@ -47,39 +72,43 @@ export function TodayScreen({
         </Card>
       )}
 
-      {task ? (
+      {/* timer đang chạy cho việc không phải MIT */}
+      {session && !timerOnMit && (
         <Card>
-          <Eyebrow>{t('today.mainTask')}</Eyebrow>
-          <h2 className="font-display mt-1.5 text-[24px] leading-tight">{task.title}</h2>
-          {task.nextAction && (
-            <p className="mt-2 text-ink-2"><span className="text-ink-3">{t('today.nextStep')}: </span>{task.nextAction}</p>
-          )}
+          <Eyebrow>{t('today.focusing', { title: focusingTask?.title ?? '' })}</Eyebrow>
+          <div className="mt-3">
+            <FocusTimer session={session} nowMs={nowMs} settings={settings} streakMin={streak} today={today} taskId={session.taskId || focusingTask?.id || ''} />
+          </div>
+        </Card>
+      )}
+
+      {/* MIT */}
+      {mit ? (
+        <Card>
+          <Eyebrow className="flex items-center gap-1"><Star size={12} className="fill-accent text-accent" />{t('today.mit')}</Eyebrow>
+          <h2 className="font-display mt-1.5 text-[24px] leading-tight">{mit.title}</h2>
+          {mit.nextAction && <p className="mt-2 text-ink-2"><span className="text-ink-3">{t('today.nextStep')}: </span>{mit.nextAction}</p>}
 
           <div className="my-6">
-            {session ? (
-              <FocusTimer session={session} nowMs={now.getTime()} settings={settings} streakMin={streak} today={today} taskId={task.id} />
-            ) : (
-              <Button size="lg" onClick={() => void startSession(task.id, today, settings.minFocusMin, now.getTime())}>
-                {focusMin > 0 ? t('today.continue', { n: settings.minFocusMin }) : t('today.start', { n: settings.minFocusMin })}
+            {session && timerOnMit ? (
+              <FocusTimer session={session} nowMs={nowMs} settings={settings} streakMin={streak} today={today} taskId={mit.id} />
+            ) : !session ? (
+              <Button size="lg" onClick={() => focus(mit)}>
+                {(minutesByTask.get(mit.id) ?? 0) > 0 ? t('today.continue', { n: settings.minFocusMin }) : t('today.start', { n: settings.minFocusMin })}
               </Button>
-            )}
+            ) : null}
           </div>
 
-          {task.dod.length > 0 && (
+          {mit.dod.length > 0 && (
             <div>
               <Eyebrow className="mb-2">{t('today.dod')}</Eyebrow>
               <ul className="flex flex-col gap-2">
-                {task.dod.map((d, i) => (
+                {mit.dod.map((d, i) => (
                   <li key={i}>
                     <label className="flex cursor-pointer items-start gap-3">
                       <input
-                        type="checkbox"
-                        className="mt-1 h-5 w-5 accent-accent"
-                        checked={d.done}
-                        onChange={(e) => {
-                          const dod = task.dod.map((x, j) => (j === i ? { ...x, done: e.target.checked } : x))
-                          void setDod(task.id, dod)
-                        }}
+                        type="checkbox" className="mt-1 h-5 w-5 accent-accent" checked={d.done}
+                        onChange={(e) => void setDod(mit.id, mit.dod.map((x, j) => (j === i ? { ...x, done: e.target.checked } : x)))}
                       />
                       <span className={d.done ? 'text-ink-3 line-through' : ''}>{d.text}</span>
                     </label>
@@ -88,66 +117,74 @@ export function TodayScreen({
               </ul>
             </div>
           )}
-
-          {canClose && (
-            <Button className="mt-4 w-full" variant={task.dod.length ? 'primary' : 'secondary'} onClick={() => void completeTask(task.id)}>
+          {canCloseMit && (
+            <Button className="mt-4 w-full" variant={mit.dod.length ? 'primary' : 'secondary'} onClick={() => void completeTask(mit.id)}>
               <Check size={16} />{t('today.close')}
             </Button>
           )}
-
           <div className="mt-5 flex items-center justify-between">
-            <Muted>{task.estimateMin ? t('today.progress', { done: focusMin, est: task.estimateMin }) : t('today.progressNoEst', { done: focusMin })}</Muted>
-            <Button variant="ghost" size="sm" onClick={() => setCancelling(true)}>{t('morn.cancel')}</Button>
+            <Muted>
+              {mit.estimateMin
+                ? t('today.progress', { done: minutesByTask.get(mit.id) ?? 0, est: mit.estimateMin })
+                : t('today.progressNoEst', { done: minutesByTask.get(mit.id) ?? 0 })}
+            </Muted>
+            <div className="flex gap-1">
+              <Button variant="ghost" size="sm" onClick={() => setEditing(mit)}>{t('row.edit')}</Button>
+              <Button variant="ghost" size="sm" onClick={() => setCancelling(true)}>{t('morn.cancel')}</Button>
+            </div>
           </div>
         </Card>
-      ) : doneToday.length > 0 ? (
-        <Card>
-          <p className="font-display text-xl"><span className="text-good">✓</span> {doneToday[0].title}</p>
-          <Muted className="mt-2">{t('today.doneHint')}</Muted>
-        </Card>
-      ) : (
-        <Card>
-          <TaskForm scheduledFor={today} heading={t('today.whatIsMain')} onCreated={() => undefined} />
-        </Card>
-      )}
+      ) : open.length > 0 ? (
+        <Muted className="flex items-center gap-1 px-1"><Star size={12} />{t('today.pickMit')}</Muted>
+      ) : null}
+
+      {/* danh sách theo khu vực */}
+      <Card className="py-4">
+        <Eyebrow className="mb-2">{t('today.list')}</Eyebrow>
+        {open.length === 0 && done.length === 0 && <Muted className="mb-3">{t('today.empty')}</Muted>}
+        {groups.map((g) => (
+          <div key={g.area} className="mb-3">
+            <p className="mb-1.5 flex items-baseline gap-2 text-[12px] font-semibold uppercase tracking-wide text-ink-3">
+              {t(`area.${g.area}`)} <span className="font-normal">{g.items.length}</span>
+            </p>
+            <SortableList ids={g.items.map((x) => x.id)} onReorder={(ids) => void reorderTasks(ids)}>
+              <ul className="flex flex-col gap-1.5">
+                {g.items.map((x) => (
+                  <SortableItem key={x.id} id={x.id}>
+                    <TaskRow task={x} today={today} minutes={minutesByTask.get(x.id) ?? 0} onFocus={focus} onEdit={setEditing} />
+                  </SortableItem>
+                ))}
+              </ul>
+            </SortableList>
+          </div>
+        ))}
+        <QuickAdd scheduledFor={today} defaultArea={settings.defaultArea} />
+        {done.length > 0 && (
+          <div className="mt-3">
+            <button className="flex items-center gap-1 text-[12px] font-semibold uppercase tracking-wide text-ink-3" onClick={() => setShowDone((s) => !s)}>
+              {showDone ? <ChevronDown size={14} /> : <ChevronRight size={14} />}{t('today.doneSection', { n: done.length })}
+            </button>
+            {showDone && (
+              <ul className="mt-1.5 flex flex-col gap-1">
+                {done.map((x) => <li key={x.id}><TaskRow task={x} today={today} minutes={minutesByTask.get(x.id) ?? 0} onEdit={setEditing} compact /></li>)}
+              </ul>
+            )}
+          </div>
+        )}
+      </Card>
 
       <Card className="py-4">
         <ParkingLot today={today} />
       </Card>
 
-      {smallTasks.length > 0 && (
-        <Card className={unlockedSmall ? '' : 'opacity-60'}>
-          <Eyebrow className="mb-2">
-            {t('today.small')}{unlockedSmall ? '' : ` · ${t('today.smallLocked', { n: settings.minFocusMin })}`}
-          </Eyebrow>
-          <ul className="flex flex-col gap-2">
-            {smallTasks.map((p) => (
-              <li key={p.id}>
-                <label className="flex items-start gap-3">
-                  <input
-                    type="checkbox" className="mt-1 h-5 w-5 accent-accent" disabled={!unlockedSmall}
-                    checked={!!p.doneAt} onChange={(e) => void toggleParkingDone(p.id, e.target.checked)}
-                  />
-                  <span className={p.doneAt ? 'text-ink-3 line-through' : ''}>{p.text}</span>
-                </label>
-              </li>
-            ))}
-          </ul>
-        </Card>
-      )}
-
       {!due && <Button variant="ghost" onClick={onShutdown}>{t('today.shutdownEarly')}</Button>}
 
-      {cancelling && task && (
+      {editing && <TaskSheet task={editing} today={today} onClose={() => setEditing(null)} />}
+      {cancelling && mit && (
         <CancelFlow
-          task={task}
-          today={today}
-          minFocusMin={settings.minFocusMin}
+          task={mit} today={today} minFocusMin={settings.minFocusMin}
           onClose={() => setCancelling(false)}
-          onStartAnyway={() => {
-            setCancelling(false)
-            void startSession(task.id, today, settings.minFocusMin, now.getTime())
-          }}
+          onStartAnyway={() => { setCancelling(false); focus(mit) }}
           onResolved={() => setCancelling(false)}
         />
       )}
