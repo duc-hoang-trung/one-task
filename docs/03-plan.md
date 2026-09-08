@@ -1,8 +1,8 @@
 # 03 · Plan phát triển web app "Một Việc"
 
-> **Trạng thái (2026-09-07):** M0–M4 đã code xong trong một phiên, 47 test pass, e2e walkthrough pass.
-> Việc còn lại của MVP là **dùng thật 4 tuần** và đo (mục "Cột mốc đánh giá"), không phải thêm tính năng.
-> Khác biệt so với plan gốc: xem mục 8.
+> **Trạng thái (2026-09-08):** M0–M4 xong (v0.1), rồi v0.2 theo yêu cầu review: UI mới, vi/en, form mềm,
+> nghỉ tích hợp, lịch tháng, Supabase sync tuỳ chọn. 65 test pass, e2e walkthrough pass, deploy Pages xanh.
+> Việc còn lại của MVP là **dùng thật 4 tuần** và đo (mục "Cột mốc đánh giá"). Khác biệt so với plan gốc: mục 8.
 
 > Plan này tự áp dụng chính các rule của app: mỗi milestone là **1 việc chính**, có **Definition of Done** kiểm được,
 > ước lượng nhỏ, và có **Next Action** cho buổi làm việc đầu tiên. Không mở milestone mới khi milestone cũ chưa đóng.
@@ -158,3 +158,16 @@ Push notification giờ Shutdown · AI concretizer · Sync Supabase · Body-doub
 4. Tab **Tuần**: nhập 1–2 mục tiêu tuần này.
 5. Tab **Hôm nay**: tạo việc chính hôm nay. Bấm Bắt đầu 10 phút.
 6. Tối nay đúng giờ: Đóng ngày. Xong.
+
+## 10. v0.2 (2026-09-08) — thay đổi theo review và đánh giá cần thiết
+
+| Yêu cầu | Đánh giá | Đã làm |
+|---|---|---|
+| UI đẹp hơn | **Cần.** App dùng hằng ngày, xấu thì bỏ. | Hệ màu giấy/mực + hổ phách, serif hiển thị, dark theo hệ, nav icon, motion nhẹ. |
+| en/vi | Không cần cho 1 người dùng, nhưng rẻ và hữu ích nếu chia sẻ. | Tự viết `t()`, mặc định theo trình duyệt, đổi trong Cài đặt. |
+| Calendar | Lịch **chỉ đọc** hợp triết lý; lịch **lên kế hoạch** có rủi ro thành backlog. User giữ quyết định làm lên kế hoạch. | Làm cả hai nhưng giới hạn: 1 việc/ngày, chỉ 14 ngày tới, xa hơn bị chặn kèm gợi ý Parking Lot. |
+| Pomodoro | Vấn đề là **bắt đầu**, không phải duy trì → không cốt lõi; nghỉ có chủ đích thì hữu ích. | Không có chế độ riêng. Sau 25′ liền, prompt hết giờ đưa "Nghỉ 5′" lên trước. |
+| Bỏ validate chặn | Quyết định của user. Rủi ro: task mơ hồ lọt lưới. | Chỉ tên việc bắt buộc; bộ lọc mơ hồ thành gợi ý mềm; mọi màn hình chịu được trường rỗng. |
+| Cloud DB free | Cần nếu dùng 2 máy hoặc sợ mất dữ liệu. | Supabase free + magic link, local-first + outbox + LWW. Không cấu hình thì app vẫn chạy thuần local. |
+
+Việc user cần làm để bật sync: xem README mục "Đồng bộ cloud".
