@@ -26,13 +26,15 @@ export function Button({
   )
 }
 
-export function Card({ children, className = '', tone = 'light' }: { children: ReactNode; className?: string; tone?: 'light' | 'dark' | 'accent' }) {
+export function Card({ children, className = '', tone = 'light', testId }: {
+  children: ReactNode; className?: string; tone?: 'light' | 'dark' | 'accent'; testId?: string
+}) {
   const tones = {
     light: 'bg-paper-2/70 text-ink ring-line shadow-card',
     accent: 'bg-accent-soft text-ink ring-accent/20',
     dark: 'bg-night-2 text-night-text ring-white/10',
   }
-  return <section className={`rounded-2xl p-5 ring-1 ${tones[tone]} ${className}`}>{children}</section>
+  return <section data-testid={testId} className={`rounded-2xl p-5 ring-1 ${tones[tone]} ${className}`}>{children}</section>
 }
 
 /** Nhãn nhỏ, chữ hoa, tracking rộng. */

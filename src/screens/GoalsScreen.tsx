@@ -151,7 +151,7 @@ function WeekReview({ periodKey, today, settings, nowMs, tasks }: { periodKey: s
   const m = computeWeekMetrics({ weekStart: from, today, sessions, dayLogs, tasks, settings, nowMs })
   const inWeek = tasks.filter((x) => x.scheduledFor && x.scheduledFor >= from && x.scheduledFor <= to && !x.deleted && x.status !== 'dropped')
   const doneN = inWeek.filter((x) => x.status === 'done').length
-  const deferTotal = m.deferrals['new-info'] + m.deferrals.urgent + m.deferrals['dont-want']
+  const deferTotal = m.deferrals['new-info'] + m.deferrals.urgent + m.deferrals['dont-want'] + m.deferrals.overdue
   const bed = m.bedtimeDeltaMin
   const pct = inWeek.length ? Math.round((doneN / inWeek.length) * 100) : 0
 
@@ -165,7 +165,7 @@ function WeekReview({ periodKey, today, settings, nowMs, tasks }: { periodKey: s
         <Stat label={t('week.m.shutdown')} value={`${m.shutdownOnTime}/${m.daysCounted}`} note={t('week.m.shutdown.note', { n: m.daysClosed })} />
         <Stat label={t('week.m.bed')} value={bed === null ? '—' : `${bed > 0 ? '+' : ''}${bed}′`} note={bed === null ? t('week.m.bed.none') : bed > 0 ? t('week.m.bed.late') : t('week.m.bed.ok')} />
         <Stat label={t('week.m.returns')} value={String(m.returns)} note={t('week.m.returns.note')} />
-        <Stat label={t('week.m.defer')} value={String(deferTotal)} note={deferTotal ? t('week.m.defer.note', { dw: m.deferrals['dont-want'], ur: m.deferrals.urgent, ni: m.deferrals['new-info'] }) : undefined} />
+        <Stat label={t('week.m.defer')} value={String(deferTotal)} note={deferTotal ? t('week.m.defer.note', { dw: m.deferrals['dont-want'], ur: m.deferrals.urgent, ni: m.deferrals['new-info'], ov: m.deferrals.overdue }) : undefined} />
       </div>
     </Card>
   )

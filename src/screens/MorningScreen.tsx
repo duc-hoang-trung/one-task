@@ -2,6 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { useEffect, useState } from 'react'
 import { ChevronDown, ChevronRight, Play } from 'lucide-react'
 import { CancelFlow } from '../components/CancelFlow'
+import { OverdueCard, useSweptToday } from '../components/OverdueCard'
 import { QuickAdd } from '../components/QuickAdd'
 import { beginFocus, defaultFocusMin, DurationChips } from '../components/StartFocus'
 import { TaskRow } from '../components/TaskRow'
@@ -26,7 +27,9 @@ export function MorningScreen({ today, task: mit, settings, now }: { today: ISOD
   const ySessions = useLiveQuery(() => db.sessions.where('date').equals(yesterday).toArray(), [yesterday], [])
   const yFocus = focusMinutesByDate(ySessions, now.getTime()).get(yesterday) ?? 0
   const anyHistory = useLiveQuery(() => db.sessions.count(), [], 0)
-  const emptyYesterday = anyHistory > 0 && yFocus < settings.minFocusMin && !yLog?.locked
+  const swept = useSweptToday(today)
+  // Cả hai đều nói về hôm qua; thẻ việc trôi cụ thể hơn nên được ưu tiên.
+  const emptyYesterday = anyHistory > 0 && yFocus < settings.minFocusMin && !yLog?.locked && swept.length === 0
   const tasks = useLiveQuery(() => tasksFor(today), [today], [])
   const open = tasks.filter(isOpen)
   const others = open.filter((x) => x.id !== mit?.id)
@@ -50,6 +53,8 @@ export function MorningScreen({ today, task: mit, settings, now }: { today: ISOD
       {emptyYesterday && (
         <Card tone="accent"><p className="text-ink-2">{t('morn.emptyYesterday')}</p></Card>
       )}
+
+      <OverdueCard today={today} />
 
       {mit ? (
         <Card className="py-7">

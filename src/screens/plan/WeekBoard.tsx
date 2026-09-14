@@ -55,8 +55,10 @@ export function WeekBoard({ today, settings, onEdit }: { today: ISODate; setting
               <ul className="flex flex-col gap-1">
                 {list.map((x) => (
                   <li key={x.id}>
-                    <DragItem id={`task:${x.id}`} disabled={past || x.status === 'done'}>
-                      <TaskRow task={x} today={today} onEdit={onEdit} compact readOnly={past} />
+                    {/* Ngày đã qua: không thả VÀO được, nhưng việc chưa xong vẫn kéo ra / mở menu được,
+                        nếu không chúng kẹt lại vĩnh viễn. Việc đã xong thì khoá để khỏi sửa nhầm lịch sử. */}
+                    <DragItem id={`task:${x.id}`} disabled={x.status === 'done'}>
+                      <TaskRow task={x} today={today} onEdit={onEdit} compact readOnly={past && x.status === 'done'} />
                     </DragItem>
                   </li>
                 ))}

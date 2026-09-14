@@ -1,7 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useEffect, useState } from 'react'
 import { LayoutGrid, Moon, Settings as SettingsIcon, Sun, Target } from 'lucide-react'
-import { useNow, useSessionGuard } from './hooks'
+import { useNow, useOverdueSweep, useSessionGuard } from './hooks'
 import { LangContext, resolveLang, translate, useT } from './i18n'
 import { activeSession } from './lib/actions'
 import { isClockOverridden } from './lib/clock'
@@ -57,6 +57,7 @@ function Shell({ settings }: { settings: Settings }) {
   const session = useLiveQuery(() => activeSession(), [today])
 
   useSessionGuard(today)
+  useOverdueSweep(today)
 
   // Nhắc: đến giờ đóng ngày (một lần/ngày) và đến giờ bắt đầu một việc (một lần/việc).
   const todayTasks = useLiveQuery(() => tasksFor(today), [today], [])

@@ -127,8 +127,8 @@ export function MonthView({ today, settings, now, onGoToday, onEdit }: {
                 <ul className="mt-2 flex flex-col gap-1.5">
                   {tasksOf(selected).map((x) => (
                     <li key={x.id}>
-                      <DragItem id={`task:${x.id}`} disabled={selRel === 'past' || x.status === 'done'}>
-                        <TaskRow task={x} today={today} onEdit={onEdit} readOnly={selRel === 'past'} compact />
+                      <DragItem id={`task:${x.id}`} disabled={x.status === 'done'}>
+                        <TaskRow task={x} today={today} onEdit={onEdit} readOnly={selRel === 'past' && x.status === 'done'} compact />
                       </DragItem>
                     </li>
                   ))}

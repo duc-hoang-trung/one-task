@@ -52,7 +52,16 @@ describe('computeWeekMetrics', () => {
     expect(m.shutdownOnTime).toBe(2)
     expect(m.bedtimeDeltaMin).toBe(Math.round((30 + 90 - 30) / 3))
     expect(m.returns).toBe(2)
-    expect(m.deferrals).toEqual({ 'new-info': 0, urgent: 1, 'dont-want': 1 })
+    expect(m.deferrals).toEqual({ 'new-info': 0, urgent: 1, 'dont-want': 1, overdue: 0 })
+    expect(m.tasksDone).toBe(1)
+  })
+
+  it('việc làm xong từ Backlog (không có ngày) vẫn được đếm theo ngày làm xong', () => {
+    const t: Task = {
+      id: 'b', title: 'Từ Backlog', area: 'work', order: 0, dod: [], consequence: '', nextAction: '',
+      status: 'done', doneAt: ms('2026-09-09', 15), createdAt: 0, deferrals: [],
+    }
+    const m = computeWeekMetrics({ weekStart: '2026-09-07', today: '2026-09-12', sessions: [], dayLogs: [], tasks: [t], settings })
     expect(m.tasksDone).toBe(1)
   })
 

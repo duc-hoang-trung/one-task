@@ -35,7 +35,8 @@ export interface Goal extends Synced {
 export type WeekGoal = Goal
 
 export type TaskStatus = 'planned' | 'active' | 'done' | 'dropped'
-export type DeferralReason = 'new-info' | 'urgent' | 'dont-want'
+/** 'overdue' = việc của ngày đã qua tự trôi về Backlog khi mở app (không do người dùng bấm). */
+export type DeferralReason = 'new-info' | 'urgent' | 'dont-want' | 'overdue'
 export interface Deferral {
   at: number
   fromDate: ISODate

@@ -4,6 +4,7 @@ import { Check, ChevronDown, ChevronRight, Moon, Play, Star } from 'lucide-react
 import { CancelFlow } from '../components/CancelFlow'
 import { SortableItem, SortableList } from '../components/dnd/SortableList'
 import { FocusTimer } from '../components/FocusTimer'
+import { OverdueCard } from '../components/OverdueCard'
 import { ParkingLot } from '../components/ParkingLot'
 import { QuickAdd } from '../components/QuickAdd'
 import { beginFocus, defaultFocusMin, DurationChips, StartFocusModal } from '../components/StartFocus'
@@ -70,6 +71,7 @@ export function TodayScreen({
   return (
     <Page subtitle={fmtDate(lang, today)} title={t('today.title')} actions={!due && <Button variant="ghost" size="sm" onClick={onShutdown}><Moon size={14} />{t('today.shutdownEarly')}</Button>}>
       {progress}
+      <OverdueCard today={today} />
       <Columns cols="5/7">
         <Col className="lg:sticky lg:top-6">
           {due && (

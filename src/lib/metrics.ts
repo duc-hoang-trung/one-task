@@ -1,4 +1,4 @@
-import { addDays, bedtimeDelta, weekDays, type ISODate } from './dates'
+import { addDays, bedtimeDelta, logicalDate, weekDays, type ISODate } from './dates'
 import { isShutdownOnTime } from './phase'
 import { elapsedMs } from './session'
 import type { DayLog, DeferralReason, Session, Settings, Task } from './types'
@@ -93,14 +93,17 @@ export function computeWeekMetrics(args: {
     if (log?.bedtimeActual) deltas.push(bedtimeDelta(settings.bedtimeTarget, log.bedtimeActual))
   }
 
-  const deferrals: Record<DeferralReason, number> = { 'new-info': 0, urgent: 0, 'dont-want': 0 }
+  const deferrals: Record<DeferralReason, number> = { 'new-info': 0, urgent: 0, 'dont-want': 0, overdue: 0 }
   let tasksDone = 0
   const weekEnd = addDays(ws, 6)
   for (const t of tasks) {
     for (const df of t.deferrals) {
       if (df.fromDate >= ws && df.fromDate <= weekEnd) deferrals[df.reason]++
     }
-    if (t.status === 'done' && t.scheduledFor && t.scheduledFor >= ws && t.scheduledFor <= weekEnd) tasksDone++
+    // Tính theo NGÀY LÀM XONG, không theo ngày đã lên lịch: việc làm thẳng từ Backlog (không có
+    // scheduledFor) trước đây không được đếm vào tuần nào cả.
+    const doneOn = t.doneAt ? logicalDate(new Date(t.doneAt)) : t.scheduledFor
+    if (t.status === 'done' && doneOn && doneOn >= ws && doneOn <= weekEnd) tasksDone++
   }
 
   return {

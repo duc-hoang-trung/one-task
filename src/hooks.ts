@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { activeSession, closeStaleSessions, reconcileSession } from './lib/actions'
+import { activeSession, closeStaleSessions, reconcileSession, sweepOverdue } from './lib/actions'
 import { now } from './lib/clock'
 import type { ISODate } from './lib/dates'
 import { decideReconcile, isFocus, isRunning, marks } from './lib/session'
@@ -68,5 +68,19 @@ export function useSessionGuard(today: ISODate) {
       document.removeEventListener('visibilitychange', onVisibility)
       window.removeEventListener('pagehide', onVisibility)
     }
+  }, [today])
+}
+
+/**
+ * Việc chưa xong của ngày đã qua → Backlog. Chạy khi mở app, khi quay lại tab (dữ liệu có thể
+ * vừa đồng bộ về) và khi đổi ngày logic. Idempotent: chạy lại không còn gì để quét.
+ */
+export function useOverdueSweep(today: ISODate) {
+  useEffect(() => {
+    const run = () => { void sweepOverdue(today) }
+    run()
+    const onVisible = () => { if (!document.hidden) run() }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
   }, [today])
 }

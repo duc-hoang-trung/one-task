@@ -1,6 +1,6 @@
 import { now } from './clock'
-import { backlogTasks, db, getOrCreateDayLog, isOpen, patch, put, softDelete, tasksFor, uid } from './db'
-import { addDays, toHM, toISODate, type HM, type ISODate } from './dates'
+import { backlogTasks, byOrder, db, getOrCreateDayLog, isOpen, patch, put, softDelete, tasksFor, uid } from './db'
+import { addDays, logicalDate, toHM, toISODate, type HM, type ISODate } from './dates'
 import { isFocus, isRunning, type Reconcile } from './session'
 import type { Area, CheckinState, DeferralReason, DodItem, Goal, Horizon, ParkingResolution, Quadrant, Session, Task } from './types'
 
@@ -147,6 +147,40 @@ export async function carryOver(date: ISODate, to: ISODate | undefined) {
   const open = (await tasksFor(date)).filter(isOpen)
   for (const t of open) await scheduleTask(t.id, to)
   return open.length
+}
+
+/**
+ * Việc chưa xong của những ngày ĐÃ QUA → Backlog, ghi một lần trôi ('overdue').
+ * Chạy khi mở app và khi đổi ngày logic, nên không phụ thuộc việc có làm nghi thức Đóng ngày hay không:
+ * bỏ qua Đóng ngày thì việc cũ vẫn về được chỗ lấy ra được, thay vì kẹt ở một ngày quá khứ.
+ * Không đẩy thẳng vào hôm nay để không dồn việc; màn Hôm nay có thẻ nhắc để kéo lên lại.
+ */
+export async function sweepOverdue(today: ISODate): Promise<Task[]> {
+  // below() đi theo index scheduledFor; ISO date so sánh chuỗi cũng là so sánh thời gian, và
+  // các dòng Backlog (scheduledFor undefined) không nằm trong index nên tự bị loại.
+  const stale = (await db.tasks.where('scheduledFor').below(today).toArray()).filter(isOpen)
+  if (stale.length === 0) return []
+  const at = now().getTime()
+  let order = await nextOrder(undefined)
+  for (const t of stale.sort(byOrder)) {
+    await patch('tasks', t.id, {
+      scheduledFor: undefined,
+      isMain: false,
+      status: 'planned',
+      order: order++,
+      deferrals: [...t.deferrals, { at, fromDate: t.scheduledFor as ISODate, reason: 'overdue' as const }],
+    })
+  }
+  return stale
+}
+
+/** Các việc vừa bị trôi trong ngày logic hôm nay (để màn Hôm nay/Sáng nhắc lại). */
+export async function sweptToday(today: ISODate): Promise<Task[]> {
+  const list = await backlogTasks()
+  return list.filter((t) => {
+    const last = t.deferrals[t.deferrals.length - 1]
+    return last?.reason === 'overdue' && logicalDate(new Date(last.at)) === today
+  })
 }
 
 // ---- Sessions ----------------------------------------------------------------

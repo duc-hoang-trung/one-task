@@ -115,7 +115,7 @@ const LAST_USER_KEY = 'sync.lastUserId'
 export async function wipeLocal() {
   await wipeAll()
   try {
-    for (const k of Object.keys(localStorage)) if (k.startsWith('sync.') || k.startsWith('focus.')) localStorage.removeItem(k)
+    for (const k of Object.keys(localStorage)) if (k.startsWith('sync.') || k.startsWith('focus.') || k.startsWith('overdue.')) localStorage.removeItem(k)
   } catch { /* ignore */ }
 }
 
@@ -126,12 +126,36 @@ export function gateFor(status: SyncStatus): 'loading' | 'login' | 'app' {
   return 'app'
 }
 
+export type SignInErrorCode = 'rate-limit' | 'cooldown' | 'other'
+
+export class SignInError extends Error {
+  constructor(message: string, readonly code: SignInErrorCode, readonly retryAfterSec?: number) {
+    super(message)
+  }
+}
+
+/**
+ * Supabase trả lỗi bằng tiếng Anh, và hai loại rất dễ nhầm nhau:
+ *  - cooldown   : cùng một email chỉ được xin link mỗi 60 giây ("after 60 seconds") → chờ là xong
+ *  - rate-limit : hết hạn mức mail của cả project trong một giờ (429) → phải chờ lâu / cắm SMTP riêng
+ */
+export function classifyAuthError(message: string, status?: number): { code: SignInErrorCode; retryAfterSec?: number } {
+  const m = message.toLowerCase()
+  const after = /after (\d+) seconds?/.exec(m)
+  if (after) return { code: 'cooldown', retryAfterSec: Number(after[1]) }
+  if (status === 429 || m.includes('rate limit') || m.includes('too many requests')) return { code: 'rate-limit' }
+  return { code: 'other' }
+}
+
 export async function signInWithEmail(email: string) {
   const sb = getSupabase()
   if (!sb) throw new Error('Supabase not configured')
   const redirectTo = `${location.origin}${import.meta.env.BASE_URL}`
   const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: redirectTo } })
-  if (error) throw new Error(error.message)
+  if (error) {
+    const { code, retryAfterSec } = classifyAuthError(error.message, (error as { status?: number }).status)
+    throw new SignInError(error.message, code, retryAfterSec)
+  }
 }
 
 /**

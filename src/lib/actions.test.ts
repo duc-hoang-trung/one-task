@@ -3,7 +3,9 @@ import { db } from './db'
 import {
   addGoal, closeDay, closeStaleSessions, createTask, deferTask, endSession, extendSession, openMorning, pauseSession, resumeSession, reconcileSession,
   resolveParking, addParking, startSession, activeSession, startBreak, setMain, scheduleTask, promoteToTask, carryOver, checkinGoal, goalsFor, reorderTasks, completeTask,
+  sweepOverdue, sweptToday,
 } from './actions'
+import { logicalDate } from './dates'
 
 const base = {
   title: 'Làm 20 câu S3', area: 'personal' as const, dod: ['20 câu có đáp án', 'Ghi 3 lỗi sai'], consequence: 'Trượt kỳ thi tháng 10',
@@ -206,6 +208,45 @@ describe('multi-task day', () => {
     expect(await carryOver('2026-09-08', '2026-09-09')).toBe(1)
     expect((await db.tasks.get(b.id))!.scheduledFor).toBe('2026-09-09')
     expect((await db.tasks.get(a.id))!.scheduledFor).toBe('2026-09-08')
+  })
+})
+
+describe('việc quá hạn', () => {
+  it('đưa việc chưa xong của ngày đã qua về Backlog, gỡ sao, ghi deferral overdue', async () => {
+    const a = await createTask({ ...base, title: 'A', isMain: true })
+    const b = await createTask({ ...base, title: 'B' })
+    const c = await createTask({ ...base, title: 'C', scheduledFor: '2026-09-20' })
+    await completeTask(b.id)
+    const moved = await sweepOverdue('2026-09-10')
+    expect(moved.map((x) => x.id)).toEqual([a.id])
+    const u = (await db.tasks.get(a.id))!
+    expect(u.scheduledFor).toBeUndefined()
+    expect(u.isMain).toBe(false)
+    expect(u.deferrals.at(-1)).toMatchObject({ fromDate: '2026-09-08', reason: 'overdue' })
+    expect((await db.tasks.get(b.id))!.scheduledFor).toBe('2026-09-08') // đã xong: để yên
+    expect((await db.tasks.get(c.id))!.scheduledFor).toBe('2026-09-20') // tương lai: để yên
+  })
+  it('không đụng việc của chính hôm nay; chạy lại không đổi gì', async () => {
+    const a = await createTask({ ...base, title: 'A' })
+    expect(await sweepOverdue('2026-09-08')).toEqual([])
+    await sweepOverdue('2026-09-09')
+    const stamp = (await db.tasks.get(a.id))!.updatedAt
+    expect(await sweepOverdue('2026-09-09')).toEqual([])
+    expect((await db.tasks.get(a.id))!.updatedAt).toBe(stamp)
+  })
+  it('việc đang chạy dở cũng về Backlog ở trạng thái planned', async () => {
+    const a = await createTask({ ...base, title: 'A' })
+    await startSession(a.id, '2026-09-08', 10, 0)
+    await sweepOverdue('2026-09-09')
+    expect((await db.tasks.get(a.id))!.status).toBe('planned')
+  })
+  it('sweptToday chỉ trả việc vừa trôi, không trả việc tự đưa vào Backlog', async () => {
+    const a = await createTask({ ...base, title: 'A' })
+    const manual = await createTask({ ...base, title: 'Tự cất' })
+    await scheduleTask(manual.id, undefined)
+    await sweepOverdue('2026-09-09')
+    const list = await sweptToday(logicalDate(new Date()))
+    expect(list.map((x) => x.id)).toEqual([a.id])
   })
 })
 
