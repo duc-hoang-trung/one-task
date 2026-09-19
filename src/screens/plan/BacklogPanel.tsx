@@ -1,11 +1,12 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { DragItem, DropZone } from '../../components/dnd/DragBoard'
-import { QuadrantChip } from '../../components/QuadrantChip'
 import { QuickAdd } from '../../components/QuickAdd'
+import { TaskRow } from '../../components/TaskRow'
 import { Eyebrow, Muted } from '../../components/ui'
 import { useT } from '../../i18n'
 import { backlogTasks, byOrder, isOpen } from '../../lib/db'
-import { QUADRANTS, type Area } from '../../lib/types'
+import type { ISODate } from '../../lib/dates'
+import { QUADRANTS, type Area, type Task } from '../../lib/types'
 
 const LIMIT = 8
 const qRank = (q?: string) => (q ? QUADRANTS.indexOf(q as (typeof QUADRANTS)[number]) : QUADRANTS.length)
@@ -14,7 +15,12 @@ const qRank = (q?: string) => (q ? QUADRANTS.indexOf(q as (typeof QUADRANTS)[num
  * Backlog dùng chung cho Tuần và Tháng: kéo việc từ đây vào một ngày, kéo việc về đây để gỡ khỏi lịch.
  * Q1 → Q4 → chưa phân loại, tối đa 8 dòng. Phải nằm trong cùng DragBoard với các vùng thả.
  */
-export function BacklogPanel({ defaultArea, className = '' }: { defaultArea: Area; className?: string }) {
+export function BacklogPanel({ today, defaultArea, className = '', onEdit }: {
+  today: ISODate
+  defaultArea: Area
+  className?: string
+  onEdit?: (t: Task) => void
+}) {
   const { t } = useT()
   const backlog = useLiveQuery(() => backlogTasks(), [], [])
   const open = backlog.filter(isOpen).sort((a, b) => qRank(a.quadrant) - qRank(b.quadrant) || byOrder(a, b))
@@ -28,7 +34,7 @@ export function BacklogPanel({ defaultArea, className = '' }: { defaultArea: Are
         {open.slice(0, LIMIT).map((x) => (
           <li key={x.id}>
             <DragItem id={`task:${x.id}`}>
-              <div className="flex items-center gap-2 rounded-lg bg-paper/70 px-2 py-1.5 text-sm ring-1 ring-line"><QuadrantChip q={x.quadrant} /><span className="truncate">{x.title}</span></div>
+              <TaskRow task={x} today={today} onEdit={onEdit} showStar={false} compact />
             </DragItem>
           </li>
         ))}

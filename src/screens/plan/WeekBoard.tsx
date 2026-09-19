@@ -74,7 +74,7 @@ export function WeekBoard({ today, settings, onEdit }: { today: ISODate; setting
           )
         })}
 
-        <BacklogPanel defaultArea={settings.defaultArea} />
+        <BacklogPanel today={today} defaultArea={settings.defaultArea} onEdit={onEdit} />
       </div>
     </DragBoard>
   )

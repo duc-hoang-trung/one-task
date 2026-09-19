@@ -1,5 +1,5 @@
-import { Check, ListChecks, MoreHorizontal, Play, Star } from 'lucide-react'
-import { useCallback, useRef, useState } from 'react'
+import { CalendarArrowDown, Check, ListChecks, MoreHorizontal, Play, Star } from 'lucide-react'
+import { useCallback, useRef, useState, type ReactNode } from 'react'
 import { useT } from '../i18n'
 import { completeTask, deleteTask, scheduleTask, setDod, setMain, uncompleteTask } from '../lib/actions'
 import { addDays, type ISODate } from '../lib/dates'
@@ -9,20 +9,26 @@ import { QuadrantChip } from './QuadrantChip'
 import { SubtaskList } from './SubtaskList'
 
 /**
- * Một dòng việc: checkbox · title · chip · k/n việc con · phút · ▶ · ⋯
- * Chạm k/n để mở danh sách việc con ngay trong dòng và tick từng mục.
- * Không kéo thả ở đây; bọc ngoài bằng SortableItem nếu cần.
+ * Một dòng việc, dùng chung cho mọi danh sách (hôm nay, Backlog, ma trận, tuần, tháng).
+ * Bố cục: [tick] [tên + hàng meta] [→hôm nay] [▶] [⋯]. Tên chiếm một hàng riêng nên không
+ * bị chip đẩy cụt trên điện thoại; meta (nhãn, k/n việc con, số phút, bước tiếp) xuống hàng dưới.
+ * compact/dense: một hàng duy nhất, meta gộp vào hàng tên.
+ * Không kéo thả ở đây; bọc ngoài bằng SortableItem / DragItem nếu cần.
  */
 export function TaskRow({
-  task, today, minutes = 0, onFocus, onEdit, onComplete, showStar = true, compact = false, readOnly = false, dense = false,
+  task, today, minutes = 0, badge, onFocus, onEdit, onComplete, onToday, showStar = true, compact = false, readOnly = false, dense = false,
 }: {
   task: Task
   today: ISODate
   minutes?: number
+  /** Nhãn nhỏ ở hàng meta (vd. "trôi từ 09/09"). */
+  badge?: ReactNode
   onFocus?: (task: Task) => void
   onEdit?: (task: Task) => void
   /** Gọi sau khi đánh xong (để màn hình mở hộp ghi giờ). */
   onComplete?: (task: Task) => void
+  /** Hiện nút một chạm đưa việc vào hôm nay (dùng ở Backlog). */
+  onToday?: (task: Task) => void
   showStar?: boolean
   compact?: boolean
   readOnly?: boolean
@@ -37,11 +43,27 @@ export function TaskRow({
   const done = task.status === 'done'
   const subN = task.dod.length
   const subK = task.dod.filter((d) => d.done).length
+  /** Hàng meta riêng: chỉ ở dòng đầy đủ. compact/dense nhồi hết vào một hàng. */
+  const twoLine = !compact && !dense
 
   const toggleDone = () => {
     if (done) return void uncompleteTask(task.id)
     void completeTask(task.id).then(() => onComplete?.(task))
   }
+
+  const subChip = subN > 0 && !dense && (
+    <button
+      type="button" aria-label={t('sub.progress', { k: subK, n: subN })} aria-expanded={subs}
+      className={`inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-semibold tabular-nums transition-colors ${subK === subN ? 'bg-good/15 text-good' : 'bg-paper-3 text-ink-2 hover:bg-paper-3/70'}`}
+      onClick={() => setSubs((s) => !s)}
+    >
+      <ListChecks size={12} />{subK}/{subN}
+    </button>
+  )
+  const min = minutes > 0 && <span className="shrink-0 tabular-nums">{minutes}′</span>
+  const sub = task.startAt || task.nextAction
+    ? <span className="min-w-0 truncate">{task.startAt ? `${task.startAt} · ` : ''}{task.nextAction}</span>
+    : null
 
   // Không dùng opacity ở root (tạo stacking context); việc xong thì nhạt chữ.
   const box = dense ? 'bg-paper/80 ring-1 ring-line' : compact ? '' : 'bg-paper/60 ring-1 ring-line'
@@ -57,26 +79,35 @@ export function TaskRow({
           {done && <Check size={14} strokeWidth={3} />}
         </button>
 
-        <button className="min-w-0 flex-1 text-left" onClick={() => onEdit?.(task)} disabled={readOnly && !onEdit}>
-          <span className={`block ${dense ? 'line-clamp-2 text-[13px] leading-snug' : 'truncate text-[15px]'} ${done ? 'line-through' : ''}`}>{task.title}</span>
-          {(task.nextAction || task.startAt) && !compact && (
-            <span className="block truncate text-[12px] text-ink-3">{task.startAt ? `${task.startAt} · ` : ''}{task.nextAction}</span>
+        <div className="flex min-w-0 flex-1 flex-col">
+          <div className="flex min-w-0 items-center gap-2">
+            <button className="min-w-0 flex-1 text-left" onClick={() => onEdit?.(task)} disabled={readOnly && !onEdit}>
+              <span className={`block ${dense ? 'line-clamp-2 text-[13px] leading-snug' : 'truncate text-[15px]'} ${done ? 'line-through' : ''}`}>{task.title}</span>
+            </button>
+            {!dense && <QuadrantChip q={task.quadrant} />}
+            {!twoLine && subChip}
+            {!twoLine && min && <span className="text-[12px] text-ink-3">{min}</span>}
+            {task.isMain && showStar && <Star size={14} className="shrink-0 fill-accent text-accent" />}
+          </div>
+          {twoLine && (badge || subChip || min || sub) && (
+            <div className="mt-1 flex min-w-0 items-center gap-2 text-[12px] text-ink-3">
+              {badge}
+              {subChip}
+              {min}
+              {sub}
+            </div>
           )}
-        </button>
+        </div>
 
-        {!dense && <QuadrantChip q={task.quadrant} />}
-        {subN > 0 && !dense && (
+        {!readOnly && !done && onToday && (
           <button
-            type="button" aria-label={t('sub.progress', { k: subK, n: subN })} aria-expanded={subs}
-            className={`inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-semibold tabular-nums ${subK === subN ? 'bg-good/15 text-good' : 'bg-paper-3 text-ink-2'} hover:bg-paper-3`}
-            onClick={() => setSubs((s) => !s)}
+            aria-label={t('today.overdue.toToday')} title={t('today.overdue.toToday')}
+            className="shrink-0 rounded-lg p-1.5 text-ink-3 transition-colors hover:bg-accent-soft hover:text-accent"
+            onClick={() => onToday(task)}
           >
-            <ListChecks size={12} />{subK}/{subN}
+            <CalendarArrowDown size={16} />
           </button>
         )}
-        {minutes > 0 && <span className="shrink-0 text-[12px] tabular-nums text-ink-3">{minutes}′</span>}
-        {task.isMain && showStar && <Star size={14} className="shrink-0 fill-accent text-accent" />}
-
         {!readOnly && !done && onFocus && (
           <button aria-label={t('row.focus')} className="shrink-0 rounded-lg p-1.5 text-ink-3 hover:bg-paper-3 hover:text-ink" onClick={() => onFocus(task)}>
             <Play size={16} />

@@ -1,7 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useState } from 'react'
 import { Clock, Trash2 } from 'lucide-react'
-import { fmtDate, useT } from '../i18n'
+import { useT } from '../i18n'
 import { addTimeLog, deleteTask, deleteTimeLog, goalsFor, scheduleTask, timeLogsFor, updateTask } from '../lib/actions'
 import { now } from '../lib/clock'
 import { db } from '../lib/db'
@@ -112,7 +112,7 @@ export function TaskSheet({ task, today, onClose }: { task: Task; today: ISODate
  * không chờ nút Lưu của sheet vì nằm ở bảng riêng).
  */
 function TimeSection({ task, today }: { task: Task; today: ISODate }) {
-  const { t, lang } = useT()
+  const { t } = useT()
   const sessions = useLiveQuery(() => db.sessions.where('taskId').equals(task.id).toArray(), [task.id], [])
   const logs = useLiveQuery(() => timeLogsFor(task.id), [task.id], [])
   const [min, setMin] = useState('')
@@ -136,47 +136,50 @@ function TimeSection({ task, today }: { task: Task; today: ISODate }) {
     setNote('')
   }
 
+  const total = timed + logged
   return (
     <div data-testid="time-section">
-      <div className="mb-1.5 flex items-baseline justify-between">
+      <div className="mb-1.5 flex items-baseline justify-between gap-2">
         <Eyebrow className="flex items-center gap-1"><Clock size={11} />{t('time.title')}</Eyebrow>
-        {timed + logged > 0 && (
-          <Muted className="text-[12px] tabular-nums">
-            {t('time.total', { n: timed + logged })}{timed > 0 && logged > 0 ? ` · ${t('time.tracked', { n: timed })} · ${t('time.logged', { n: logged })}` : ''}
-          </Muted>
+        {total > 0 && (
+          <span className="rounded-full bg-paper-3/70 px-2 py-0.5 text-[12px] font-medium tabular-nums text-ink-2">{t('time.total', { n: total })}</span>
         )}
       </div>
       <div className="rounded-xl border border-line bg-paper px-3 py-2">
         {entries.length === 0 ? (
           <Muted className="py-1">{t('time.none')}</Muted>
         ) : (
-          <ul className="flex flex-col divide-y divide-line">
-            {entries.map((e) => (
-              <li key={e.key} className="flex items-center gap-2 py-1.5 text-sm">
-                <span className="w-24 shrink-0 whitespace-nowrap text-ink-3">{fmtDate(lang, e.date)}</span>
-                <span className="w-12 shrink-0 tabular-nums">{e.minutes}′</span>
-                <span className="min-w-0 flex-1 truncate text-ink-2">
-                  <span className="text-ink-3">{e.kind === 'timer' ? t('time.entry.timer') : t('time.entry.manual')}</span>{e.note ? ` · ${e.note}` : ''}
-                </span>
-                {e.id && (
-                  <button type="button" aria-label={t('common.delete')} className="shrink-0 rounded p-1 text-ink-3 hover:text-bad" onClick={() => void deleteTimeLog(e.id!)}>
-                    <Trash2 size={14} />
-                  </button>
-                )}
-              </li>
-            ))}
-          </ul>
+          <>
+            <ul className="flex flex-col divide-y divide-line">
+              {entries.map((e) => (
+                <li key={e.key} className="flex items-baseline gap-2.5 py-1.5 text-sm">
+                  <span className="w-11 shrink-0 text-right font-medium tabular-nums">{e.minutes}′</span>
+                  <span className="w-11 shrink-0 tabular-nums text-ink-3">{dm(e.date)}</span>
+                  <span className="min-w-0 flex-1 truncate text-ink-2">
+                    <span className="text-ink-3">{e.kind === 'timer' ? t('time.entry.timer') : t('time.entry.manual')}</span>{e.note ? ` · ${e.note}` : ''}
+                  </span>
+                  {e.id ? (
+                    <button type="button" aria-label={t('common.delete')} className="shrink-0 self-center rounded p-1 text-ink-3 hover:text-bad" onClick={() => void deleteTimeLog(e.id!)}>
+                      <Trash2 size={14} />
+                    </button>
+                  ) : <span className="w-6 shrink-0" />}
+                </li>
+              ))}
+            </ul>
+            {timed > 0 && logged > 0 && (
+              <Muted className="mt-1 text-[11px]">{t('time.tracked', { n: timed })} · {t('time.logged', { n: logged })}</Muted>
+            )}
+          </>
         )}
-        <form
-          noValidate className="mt-2 flex flex-wrap items-center gap-2 border-t border-line pt-2"
-          onSubmit={(e) => { e.preventDefault(); void add() }}
-        >
-          <Input type="date" aria-label={t('time.log.date')} className="!w-auto !py-1.5 text-sm" value={date} onChange={(e) => setDate(e.target.value)} />
-          <Input type="number" inputMode="numeric" min={1} aria-label={t('common.min')} className="!w-20 !py-1.5 text-sm" placeholder={t('common.min')} value={min} onChange={(e) => setMin(e.target.value)} />
-          <Input className="min-w-32 flex-1 !py-1.5 text-sm" placeholder={t('time.log.note.ph')} value={note} onChange={(e) => setNote(e.target.value)} />
+        <form noValidate className="mt-2 grid grid-cols-[minmax(0,1fr)_5rem] gap-2 border-t border-line pt-2.5" onSubmit={(e) => { e.preventDefault(); void add() }}>
+          <Input type="date" aria-label={t('time.log.date')} className="!py-1.5 text-sm" value={date} onChange={(e) => setDate(e.target.value)} />
+          <Input type="number" inputMode="numeric" min={1} aria-label={t('common.min')} className="!py-1.5 text-center text-sm" placeholder={t('common.min')} value={min} onChange={(e) => setMin(e.target.value)} />
+          <Input className="!py-1.5 text-sm" placeholder={t('time.log.note.ph')} value={note} onChange={(e) => setNote(e.target.value)} />
           <Button type="submit" size="sm" variant="secondary" disabled={!(Number(min) > 0)}>{t('time.log')}</Button>
         </form>
       </div>
     </div>
   )
 }
+
+const dm = (iso: ISODate) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`

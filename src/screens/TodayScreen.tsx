@@ -76,7 +76,7 @@ export function TodayScreen({
   return (
     <Page subtitle={fmtDate(lang, today)} title={t('today.title')} actions={!due && <Button variant="ghost" size="sm" onClick={onShutdown}><Moon size={14} />{t('today.shutdownEarly')}</Button>}>
       {progress}
-      <Columns cols="4/5/3">
+      <Columns cols="1/1/1">
         <Col className="lg:sticky lg:top-6">
           {due && (
             <Card tone="accent">
@@ -203,7 +203,7 @@ export function TodayScreen({
 
         <Col>
           <Card className="py-4">
-            <TodayBacklog today={today} onEdit={setEditing} onGoPlan={onGoPlan} />
+            <TodayBacklog today={today} onEdit={setEditing} onComplete={setLogging} onGoPlan={onGoPlan} />
           </Card>
         </Col>
       </Columns>

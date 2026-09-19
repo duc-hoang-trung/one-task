@@ -179,7 +179,7 @@ export function MonthView({ today, settings, now, onGoToday, onEdit }: {
             </Card>
           )}
           {!selected && <Muted className="px-1">{t('cal.pickDay')}</Muted>}
-          <BacklogPanel defaultArea={settings.defaultArea} />
+          <BacklogPanel today={today} defaultArea={settings.defaultArea} onEdit={onEdit} />
           <MonthStats year={year} month={month} today={today} settings={settings} tasks={tasks} focus={focus} dayLogs={dayLogs} area={area} onArea={setArea} />
         </Col>
       </Columns>

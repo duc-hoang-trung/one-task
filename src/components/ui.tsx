@@ -117,13 +117,12 @@ export function Page({ title, subtitle, actions, children, className = '', width
 }
 
 /** Hai/ba cột trên màn rộng, một cột trên điện thoại. Con: <Col>…</Col>. */
-export function Columns({ children, className = '', cols = '5/7' }: { children: ReactNode; className?: string; cols?: '5/7' | '7/5' | '1/1' | '1/1/1' | '4/5/3' }) {
+export function Columns({ children, className = '', cols = '5/7' }: { children: ReactNode; className?: string; cols?: '5/7' | '7/5' | '1/1' | '1/1/1' }) {
   const tpl = {
     '5/7': 'lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]',
     '7/5': 'lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]',
     '1/1': 'lg:grid-cols-2',
     '1/1/1': 'lg:grid-cols-3',
-    '4/5/3': 'lg:grid-cols-[minmax(0,4fr)_minmax(0,5fr)_minmax(0,3fr)]',
   }[cols]
   return <div className={`flex flex-col gap-4 lg:grid lg:items-start lg:gap-6 ${tpl} ${className}`}>{children}</div>
 }
