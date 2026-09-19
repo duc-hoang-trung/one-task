@@ -10,7 +10,7 @@ import { fmtDate, fmtMonth, useT, type Key } from '../../i18n'
 import { monthGrid, monthOf, monthRange, relation, shiftMonth } from '../../lib/calendar'
 import { byOrder, db } from '../../lib/db'
 import { bedtimeDelta, type ISODate } from '../../lib/dates'
-import { focusMinutesByDate } from '../../lib/metrics'
+import { focusMinutesByDate, minutesByTask } from '../../lib/metrics'
 import { isShutdownOnTime } from '../../lib/phase'
 import type { Area, Settings, Task } from '../../lib/types'
 import { BacklogPanel } from './BacklogPanel'
@@ -38,6 +38,16 @@ export function MonthView({ today, settings, now, onGoToday, onEdit }: {
     [from, to], [],
   )
   const tasks = allTasks.filter((x) => area === 'all' || x.area === area)
+  const timeLogs = useLiveQuery(
+    () => db.timeLogs.where('date').between(from, to, true, true).filter((l) => !l.deleted).toArray(),
+    [from, to], [],
+  )
+  // Timesheet ngày đã chọn: phút đo + phút ghi theo việc; việc có thể nằm ngoài tháng (Backlog) nên tra tên riêng.
+  const sheet = selected ? [...minutesByTask(sessions.filter((s) => s.date === selected), timeLogs.filter((l) => l.date === selected), now.getTime())] : []
+  const sheetIds = sheet.map(([id]) => id).sort().join(',')
+  const sheetTasks = useLiveQuery(async () => (sheetIds ? await db.tasks.bulkGet(sheetIds.split(',')) : []), [sheetIds], [])
+  const titleOf = (id: string) => sheetTasks.find((x) => x?.id === id)?.title ?? '…'
+  const sheetTotal = sheet.reduce((a, [, n]) => a + n, 0)
   const focus = focusMinutesByDate(sessions, now.getTime())
   const logOf = (d: ISODate) => dayLogs.find((l) => l.date === d)
   const tasksOf = (d: ISODate) => tasks.filter((x) => x.scheduledFor === d).sort(byOrder)
@@ -138,6 +148,26 @@ export function MonthView({ today, settings, now, onGoToday, onEdit }: {
               )}
               {selRel !== 'past' && (
                 <div className="mt-3"><QuickAdd key={selected} scheduledFor={selected} defaultArea={settings.defaultArea} /></div>
+              )}
+              {selRel !== 'future' && (
+                <div className="mt-4" data-testid="timesheet">
+                  <div className="mb-1 flex items-baseline justify-between">
+                    <Eyebrow>{t('time.sheet')}</Eyebrow>
+                    {sheetTotal > 0 && <Muted className="text-[12px] tabular-nums">{t('time.total', { n: sheetTotal })}</Muted>}
+                  </div>
+                  {sheet.length === 0 ? (
+                    <Muted>{t('time.sheet.empty')}</Muted>
+                  ) : (
+                    <ul className="flex flex-col divide-y divide-line text-sm">
+                      {sheet.sort((a, b) => b[1] - a[1]).map(([id, n]) => (
+                        <li key={id} className="flex items-center gap-2 py-1.5">
+                          <span className="min-w-0 flex-1 truncate">{titleOf(id)}</span>
+                          <span className="shrink-0 tabular-nums text-ink-2">{n}′</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
               )}
               {selRel === 'past' && (
                 <div className="mt-3 grid grid-cols-3 gap-2 text-center text-sm">

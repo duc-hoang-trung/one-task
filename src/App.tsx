@@ -97,7 +97,7 @@ function Shell({ settings }: { settings: Settings }) {
   } else if (phase === 'morning') {
     screen = <MorningScreen today={today} task={task} settings={settings} now={now} />
   } else {
-    screen = <TodayScreen today={today} task={task} session={session} settings={settings} now={now} onShutdown={() => setShutdown(true)} />
+    screen = <TodayScreen today={today} task={task} session={session} settings={settings} now={now} onShutdown={() => setShutdown(true)} onGoPlan={() => setView('plan')} />
   }
 
   const tabs: { v: View; label: string; icon: React.ReactNode }[] = [

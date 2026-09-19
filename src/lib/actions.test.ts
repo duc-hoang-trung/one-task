@@ -3,7 +3,7 @@ import { db } from './db'
 import {
   addGoal, closeDay, closeStaleSessions, createTask, deferTask, endSession, extendSession, openMorning, pauseSession, resumeSession, reconcileSession,
   resolveParking, addParking, startSession, activeSession, startBreak, setMain, scheduleTask, promoteToTask, carryOver, checkinGoal, goalsFor, reorderTasks, completeTask,
-  sweepOverdue, sweptToday,
+  sweepOverdue, sweptToday, addTimeLog, deleteTimeLog, timeLogsFor, timeLogsOn, updateTask,
 } from './actions'
 import { logicalDate } from './dates'
 
@@ -13,7 +13,7 @@ const base = {
 }
 
 beforeEach(async () => {
-  await Promise.all([db.goals.clear(), db.tasks.clear(), db.sessions.clear(), db.parking.clear(), db.dayLogs.clear()])
+  await Promise.all([db.goals.clear(), db.tasks.clear(), db.sessions.clear(), db.parking.clear(), db.dayLogs.clear(), db.timeLogs.clear()])
 })
 
 describe('tasks', () => {
@@ -247,6 +247,39 @@ describe('việc quá hạn', () => {
     await sweepOverdue('2026-09-09')
     const list = await sweptToday(logicalDate(new Date()))
     expect(list.map((x) => x.id)).toEqual([a.id])
+  })
+})
+
+describe('việc con', () => {
+  it('sửa chữ việc con giữ nguyên mục đã tick; mục rỗng bị bỏ', async () => {
+    const t = await createTask(base) // 2 mục, chưa tick
+    await updateTask(t.id, { dod: [{ text: '20 câu có đáp án', done: true }, { text: '  ', done: false }, { text: 'Ghi 5 lỗi sai', done: false }] })
+    const u = (await db.tasks.get(t.id))!
+    expect(u.dod).toEqual([{ text: '20 câu có đáp án', done: true }, { text: 'Ghi 5 lỗi sai', done: false }])
+  })
+})
+
+describe('timesheet', () => {
+  it('ghi nhiều lần cho một việc, cộng dồn, xoá mềm', async () => {
+    const t = await createTask(base)
+    await addTimeLog(t.id, '2026-09-08', 30, ' họp khách ')
+    const b = (await addTimeLog(t.id, '2026-09-09', 45))!
+    expect(await addTimeLog(t.id, '2026-09-09', 0)).toBeUndefined()
+    let logs = await timeLogsFor(t.id)
+    expect(logs.map((l) => l.minutes)).toEqual([30, 45])
+    expect(logs[0].note).toBe('họp khách')
+    expect(logs[1].note).toBeUndefined()
+    expect((await timeLogsOn('2026-09-09')).map((l) => l.id)).toEqual([b.id])
+    await deleteTimeLog(b.id)
+    logs = await timeLogsFor(t.id)
+    expect(logs).toHaveLength(1)
+    expect(await timeLogsOn('2026-09-09')).toEqual([])
+  })
+  it('ghi giờ đi qua outbox để đồng bộ', async () => {
+    await db.outbox.clear()
+    const t = await createTask(base)
+    const l = (await addTimeLog(t.id, '2026-09-08', 10))!
+    expect(await db.outbox.get(`timeLogs:${l.id}`)).toMatchObject({ table: 'timeLogs', rowId: l.id })
   })
 })
 

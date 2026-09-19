@@ -89,6 +89,19 @@ export interface Session extends Synced {
   pausedMs?: number
 }
 
+/**
+ * Một dòng timesheet ghi tay: "làm việc này N phút vào ngày D" (ghi bao nhiêu lần cũng được).
+ * Khác với Session (đồng hồ đo tự động); tổng giờ của một việc = phút đo + phút ghi.
+ */
+export interface TimeLog extends Synced {
+  id: string
+  taskId: string
+  date: ISODate
+  minutes: number
+  note?: string
+  createdAt: number
+}
+
 export type ParkingResolution = 'drop' | 'later' | 'tomorrow'
 export interface ParkingItem extends Synced {
   id: string

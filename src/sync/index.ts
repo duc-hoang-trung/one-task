@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react'
 import { wipeAll } from '../lib/actions'
-import { db, onLocalWrite } from '../lib/db'
+import { db, onLocalWrite, SYNC_TABLES } from '../lib/db'
 import { enqueueAll, syncOnce, type Cursor } from './engine'
 import { getSupabase, supabaseConfigured, SupabaseRemote } from './supabase'
 
@@ -28,6 +28,18 @@ let userId: string | null = null
 let running = false
 let timer: ReturnType<typeof setTimeout> | null = null
 let initialized = false
+
+/**
+ * Bản cũ kéo về gặp bảng lạ (vd. timeLogs mới thêm) thì bỏ qua dòng nhưng con trỏ vẫn tiến qua;
+ * nâng cấp xong sẽ không bao giờ thấy lại các dòng đó. Tập bảng đổi → kéo lại từ đầu (LWW nên vô hại).
+ */
+const SCHEMA_TAG = SYNC_TABLES.join(',')
+function resetCursorIfSchemaChanged(uid: string) {
+  const key = `sync.schema:${uid}`
+  if (localStorage.getItem(key) === SCHEMA_TAG) return
+  localStorage.removeItem(`sync.lastPulledAt:${uid}`)
+  localStorage.setItem(key, SCHEMA_TAG)
+}
 
 const cursorFor = (uid: string): Cursor => ({
   get: () => Number(localStorage.getItem(`sync.lastPulledAt:${uid}`) || 0),
@@ -95,6 +107,7 @@ export function initSync() {
       const last = localStorage.getItem(LAST_USER_KEY)
       if (last && last !== u.id) await wipeLocal()
       localStorage.setItem(LAST_USER_KEY, u.id)
+      resetCursorIfSchemaChanged(u.id)
       // Lần đầu đăng nhập trên máy này: đẩy toàn bộ local để merge hai chiều (LWW).
       if (!localStorage.getItem(key)) {
         await enqueueAll()

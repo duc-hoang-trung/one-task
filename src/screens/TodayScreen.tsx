@@ -4,23 +4,24 @@ import { Check, ChevronDown, ChevronRight, Moon, Play, Star } from 'lucide-react
 import { CancelFlow } from '../components/CancelFlow'
 import { SortableItem, SortableList } from '../components/dnd/SortableList'
 import { FocusTimer } from '../components/FocusTimer'
-import { OverdueCard } from '../components/OverdueCard'
+import { LogTimeModal } from '../components/LogTimeModal'
 import { ParkingLot } from '../components/ParkingLot'
 import { QuickAdd } from '../components/QuickAdd'
 import { beginFocus, defaultFocusMin, DurationChips, StartFocusModal } from '../components/StartFocus'
 import { TaskRow } from '../components/TaskRow'
 import { TaskSheet } from '../components/TaskSheet'
+import { TodayBacklog } from '../components/TodayBacklog'
 import { Button, Card, Col, Columns, Eyebrow, Muted, Page } from '../components/ui'
 import { fmtDate, useT } from '../i18n'
-import { completeTask, reorderTasks, setDod, setMain } from '../lib/actions'
+import { completeTask, reorderTasks, setDod, setMain, timeLogsOn } from '../lib/actions'
 import { db, isOpen, tasksFor } from '../lib/db'
 import type { ISODate } from '../lib/dates'
-import { focusMinutesByDate, focusStreakMin, sessionMinutes } from '../lib/metrics'
+import { focusMinutesByDate, focusStreakMin, minutesByTask } from '../lib/metrics'
 import { isShutdownDue } from '../lib/phase'
 import type { Area, Session, Settings, Task } from '../lib/types'
 
 export function TodayScreen({
-  today, task: mit, session, settings, now, onShutdown,
+  today, task: mit, session, settings, now, onShutdown, onGoPlan,
 }: {
   today: ISODate
   task?: Task
@@ -28,23 +29,27 @@ export function TodayScreen({
   settings: Settings
   now: Date
   onShutdown: () => void
+  onGoPlan?: () => void
 }) {
   const { t, lang } = useT()
   const [cancelling, setCancelling] = useState(false)
   const [editing, setEditing] = useState<Task | null>(null)
   const [starting, setStarting] = useState<Task | null>(null)
   const [showDone, setShowDone] = useState(false)
+  const [logging, setLogging] = useState<Task | null>(null)
   // Thời lượng cho nút Bắt đầu của MIT: ước lượng (nếu vừa phải) → lần chọn gần nhất → phút khởi động
   const [mitMin, setMitMin] = useState(() => defaultFocusMin(mit, settings))
   useEffect(() => { setMitMin(defaultFocusMin(mit, settings)) }, [mit?.id, mit?.estimateMin]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const tasks = useLiveQuery(() => tasksFor(today), [today], [])
   const sessions = useLiveQuery(() => db.sessions.where('date').equals(today).toArray(), [today], [])
+  const logs = useLiveQuery(() => timeLogsOn(today), [today], [])
   const nowMs = now.getTime()
   const focusMin = focusMinutesByDate(sessions, nowMs).get(today) ?? 0
   const streak = focusStreakMin(sessions, nowMs)
-  const minutesByTask = new Map<string, number>()
-  for (const s of sessions) if (s.kind !== 'break') minutesByTask.set(s.taskId, (minutesByTask.get(s.taskId) ?? 0) + sessionMinutes(s, nowMs))
+  // Phút hiện ở dòng việc = đồng hồ + ghi tay; phút "đã đo" riêng để gợi ý trong hộp ghi giờ.
+  const minutesOf = minutesByTask(sessions, logs, nowMs)
+  const trackedOf = minutesByTask(sessions, [], nowMs)
 
   const open = tasks.filter(isOpen)
   const done = tasks.filter((x) => x.status === 'done')
@@ -71,8 +76,7 @@ export function TodayScreen({
   return (
     <Page subtitle={fmtDate(lang, today)} title={t('today.title')} actions={!due && <Button variant="ghost" size="sm" onClick={onShutdown}><Moon size={14} />{t('today.shutdownEarly')}</Button>}>
       {progress}
-      <OverdueCard today={today} />
-      <Columns cols="5/7">
+      <Columns cols="4/5/3">
         <Col className="lg:sticky lg:top-6">
           {due && (
             <Card tone="accent">
@@ -106,7 +110,7 @@ export function TodayScreen({
                   <div className="flex flex-col gap-3">
                     <Button size="lg" onClick={() => void beginFocus(mit, today, mitMin, settings)}>
                       <Play size={18} />
-                      {(minutesByTask.get(mit.id) ?? 0) > 0 ? t('today.continue', { n: mitMin }) : t('today.start', { n: mitMin })}
+                      {(minutesOf.get(mit.id) ?? 0) > 0 ? t('today.continue', { n: mitMin }) : t('today.start', { n: mitMin })}
                     </Button>
                     <DurationChips value={mitMin} onChange={setMitMin} settings={settings} estimate={mit.estimateMin} />
                   </div>
@@ -132,15 +136,15 @@ export function TodayScreen({
                 </div>
               )}
               {canCloseMit && (
-                <Button className="mt-4 w-full" variant={mit.dod.length ? 'primary' : 'secondary'} onClick={() => void completeTask(mit.id)}>
+                <Button className="mt-4 w-full" variant={mit.dod.length ? 'primary' : 'secondary'} onClick={() => void completeTask(mit.id).then(() => setLogging(mit))}>
                   <Check size={16} />{t('today.close')}
                 </Button>
               )}
               <div className="mt-5 flex flex-wrap items-center justify-between gap-2">
                 <Muted>
                   {mit.estimateMin
-                    ? t('today.progress', { done: minutesByTask.get(mit.id) ?? 0, est: mit.estimateMin })
-                    : t('today.progressNoEst', { done: minutesByTask.get(mit.id) ?? 0 })}
+                    ? t('today.progress', { done: minutesOf.get(mit.id) ?? 0, est: mit.estimateMin })
+                    : t('today.progressNoEst', { done: minutesOf.get(mit.id) ?? 0 })}
                 </Muted>
                 <div className="flex gap-1">
                   <Button variant="ghost" size="sm" onClick={() => setEditing(mit)}>{t('row.edit')}</Button>
@@ -170,7 +174,7 @@ export function TodayScreen({
                   <ul className="flex flex-col gap-1.5">
                     {g.items.map((x) => (
                       <SortableItem key={x.id} id={x.id}>
-                        <TaskRow task={x} today={today} minutes={minutesByTask.get(x.id) ?? 0} onFocus={setStarting} onEdit={setEditing} />
+                        <TaskRow task={x} today={today} minutes={minutesOf.get(x.id) ?? 0} onFocus={setStarting} onEdit={setEditing} onComplete={setLogging} />
                       </SortableItem>
                     ))}
                   </ul>
@@ -185,7 +189,7 @@ export function TodayScreen({
                 </button>
                 {showDone && (
                   <ul className="mt-1.5 flex flex-col gap-1">
-                    {done.map((x) => <li key={x.id}><TaskRow task={x} today={today} minutes={minutesByTask.get(x.id) ?? 0} onEdit={setEditing} compact /></li>)}
+                    {done.map((x) => <li key={x.id}><TaskRow task={x} today={today} minutes={minutesOf.get(x.id) ?? 0} onEdit={setEditing} compact /></li>)}
                   </ul>
                 )}
               </div>
@@ -196,9 +200,16 @@ export function TodayScreen({
             <ParkingLot today={today} />
           </Card>
         </Col>
+
+        <Col>
+          <Card className="py-4">
+            <TodayBacklog today={today} onEdit={setEditing} onGoPlan={onGoPlan} />
+          </Card>
+        </Col>
       </Columns>
 
       {editing && <TaskSheet task={editing} today={today} onClose={() => setEditing(null)} />}
+      {logging && <LogTimeModal task={logging} date={today} tracked={trackedOf.get(logging.id) ?? 0} onClose={() => setLogging(null)} />}
       {starting && <StartFocusModal task={starting} today={today} settings={settings} onClose={() => setStarting(null)} />}
       {cancelling && mit && (
         <CancelFlow

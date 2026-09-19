@@ -2,7 +2,7 @@ import { now } from './clock'
 import { backlogTasks, byOrder, db, getOrCreateDayLog, isOpen, patch, put, softDelete, tasksFor, uid } from './db'
 import { addDays, logicalDate, toHM, toISODate, type HM, type ISODate } from './dates'
 import { isFocus, isRunning, type Reconcile } from './session'
-import type { Area, CheckinState, DeferralReason, DodItem, Goal, Horizon, ParkingResolution, Quadrant, Session, Task } from './types'
+import type { Area, CheckinState, Deferral, DeferralReason, DodItem, Goal, Horizon, ParkingResolution, Quadrant, Session, Task, TimeLog } from './types'
 
 // ---- Tasks -------------------------------------------------------------------
 
@@ -50,12 +50,13 @@ export async function createTask(input: NewTaskInput): Promise<Task> {
   return task
 }
 
-export type TaskPatch = Partial<Pick<Task, 'title' | 'area' | 'quadrant' | 'goalId' | 'estimateMin' | 'nextAction' | 'consequence' | 'startAt'>> & { dod?: string[] }
+export type TaskPatch = Partial<Pick<Task, 'title' | 'area' | 'quadrant' | 'goalId' | 'estimateMin' | 'nextAction' | 'consequence' | 'startAt'>> & { dod?: DodItem[] }
 
+/** Việc con giữ nguyên trạng thái đã tick khi sửa chữ (trước đây mỗi lần lưu là reset hết). */
 export async function updateTask(taskId: string, changes: TaskPatch) {
   const { dod, ...rest } = changes
   const clean: Partial<Task> = { ...rest }
-  if (dod) clean.dod = dod.map((text) => ({ text: text.trim(), done: false })).filter((d) => d.text)
+  if (dod) clean.dod = dod.map((d) => ({ text: d.text.trim(), done: Boolean(d.done) })).filter((d) => d.text)
   if (clean.title !== undefined) clean.title = clean.title.trim()
   await patch('tasks', taskId, clean)
 }
@@ -174,13 +175,15 @@ export async function sweepOverdue(today: ISODate): Promise<Task[]> {
   return stale
 }
 
-/** Các việc vừa bị trôi trong ngày logic hôm nay (để màn Hôm nay/Sáng nhắc lại). */
+/** Lần trôi cuối của việc, nếu nó xảy ra trong ngày logic hôm nay (để gắn nhãn "trôi từ …"). */
+export function sweptOn(t: Task, today: ISODate): Deferral | undefined {
+  const last = t.deferrals[t.deferrals.length - 1]
+  return last?.reason === 'overdue' && logicalDate(new Date(last.at)) === today ? last : undefined
+}
+
+/** Các việc vừa bị trôi trong ngày logic hôm nay (để màn Sáng nhắc lại). */
 export async function sweptToday(today: ISODate): Promise<Task[]> {
-  const list = await backlogTasks()
-  return list.filter((t) => {
-    const last = t.deferrals[t.deferrals.length - 1]
-    return last?.reason === 'overdue' && logicalDate(new Date(last.at)) === today
-  })
+  return (await backlogTasks()).filter((t) => sweptOn(t, today) !== undefined)
 }
 
 // ---- Sessions ----------------------------------------------------------------
@@ -259,6 +262,33 @@ export async function closeStaleSessions(today: ISODate) {
       pausedAt: undefined,
     })
   }
+}
+
+// ---- Timesheet (ghi giờ tay) --------------------------------------------------
+
+/** Ghi "làm việc này N phút vào ngày D". Trả về dòng vừa ghi; bỏ qua N ≤ 0. */
+export async function addTimeLog(taskId: string, date: ISODate, minutes: number, note?: string): Promise<TimeLog | undefined> {
+  const n = Math.round(minutes)
+  if (!(n > 0)) return
+  const row: TimeLog = { id: uid(), taskId, date, minutes: n, note: note?.trim() || undefined, createdAt: now().getTime() }
+  await put('timeLogs', row)
+  return row
+}
+
+export async function deleteTimeLog(id: string) {
+  await softDelete('timeLogs', id)
+}
+
+/** Mọi dòng ghi tay của một việc, theo ngày làm rồi tới lúc ghi (hai dòng ghi cùng ms vẫn có thứ tự ổn định). */
+export async function timeLogsFor(taskId: string): Promise<TimeLog[]> {
+  const list = await db.timeLogs.where('taskId').equals(taskId).toArray()
+  return list.filter((l) => !l.deleted).sort((a, b) => a.date.localeCompare(b.date) || a.createdAt - b.createdAt || a.id.localeCompare(b.id))
+}
+
+/** Mọi dòng ghi tay trong một ngày. */
+export async function timeLogsOn(date: ISODate): Promise<TimeLog[]> {
+  const list = await db.timeLogs.where('date').equals(date).toArray()
+  return list.filter((l) => !l.deleted)
 }
 
 // ---- Parking lot (inbox ghi nhanh) ------------------------------------------
@@ -367,7 +397,7 @@ export async function goalsFor(periodKey: string): Promise<Goal[]> {
 
 export async function wipeAll() {
   await Promise.all([
-    db.goals.clear(), db.tasks.clear(), db.sessions.clear(), db.parking.clear(), db.dayLogs.clear(), db.settings.clear(), db.outbox.clear(),
+    db.goals.clear(), db.tasks.clear(), db.sessions.clear(), db.parking.clear(), db.dayLogs.clear(), db.settings.clear(), db.timeLogs.clear(), db.outbox.clear(),
   ])
 }
 

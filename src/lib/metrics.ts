@@ -1,7 +1,7 @@
 import { addDays, bedtimeDelta, logicalDate, weekDays, type ISODate } from './dates'
 import { isShutdownOnTime } from './phase'
 import { elapsedMs } from './session'
-import type { DayLog, DeferralReason, Session, Settings, Task } from './types'
+import type { DayLog, DeferralReason, Session, Settings, Task, TimeLog } from './types'
 
 export interface WeekMetrics {
   weekStart: ISODate
@@ -43,6 +43,14 @@ export const FORGOT_GRACE_MIN = 30
 export function sessionMinutes(s: Session, nowMs: number): number {
   const raw = Math.round(elapsedMs(s, nowMs) / 60_000)
   return Math.min(raw, s.plannedMin + FORGOT_GRACE_MIN)
+}
+
+/** Tổng phút theo việc = phút đo bằng đồng hồ (trừ break) + phút ghi tay. */
+export function minutesByTask(sessions: Session[], logs: TimeLog[], nowMs: number): Map<string, number> {
+  const m = new Map<string, number>()
+  for (const s of sessions) if (s.kind !== 'break' && s.taskId) m.set(s.taskId, (m.get(s.taskId) ?? 0) + sessionMinutes(s, nowMs))
+  for (const l of logs) if (!l.deleted) m.set(l.taskId, (m.get(l.taskId) ?? 0) + l.minutes)
+  return m
 }
 
 export function focusMinutesByDate(sessions: Session[], nowMs: number): Map<ISODate, number> {

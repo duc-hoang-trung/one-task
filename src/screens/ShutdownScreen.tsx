@@ -1,6 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useState } from 'react'
 import { Star } from 'lucide-react'
+import { LogTimeModal } from '../components/LogTimeModal'
 import { QuickAdd } from '../components/QuickAdd'
 import { TaskForm } from '../components/TaskForm'
 import { TaskRow } from '../components/TaskRow'
@@ -10,7 +11,7 @@ import { fmtDate, useT } from '../i18n'
 import { carryOver, closeDay, completeTask, deleteParking, dropTask, promoteToTask, scheduleTask } from '../lib/actions'
 import { backlogTasks, db, isOpen, tasksFor } from '../lib/db'
 import { addDays, type ISODate } from '../lib/dates'
-import { sessionMinutes } from '../lib/metrics'
+import { minutesByTask, sessionMinutes } from '../lib/metrics'
 import type { Settings, Task } from '../lib/types'
 
 /**
@@ -31,6 +32,7 @@ export function ShutdownScreen({
   const [nextStep, setNextStep] = useState('')
   const [editing, setEditing] = useState<Task | null>(null)
   const [creating, setCreating] = useState(false)
+  const [logging, setLogging] = useState<Task | null>(null)
 
   const todays = useLiveQuery(() => tasksFor(today), [today], [])
   const tomorrows = useLiveQuery(() => tasksFor(tomorrow), [tomorrow], [])
@@ -46,6 +48,7 @@ export function ShutdownScreen({
   const mitMinutes = mit ? sessions.filter((s) => s.taskId === mit.id && s.kind !== 'break').reduce((a, s) => a + sessionMinutes(s, now.getTime()), 0) : 0
   const outcome: 'done' | 'progress' | 'none' = !mit ? 'none' : mit.status === 'done' ? 'done' : mitMinutes > 0 ? 'progress' : 'none'
   const suggested = backlog.filter((x) => x.quadrant === 'q1' || x.quadrant === 'q2').slice(0, 5)
+  const trackedOf = minutesByTask(sessions, [], now.getTime())
 
   async function finish() {
     await closeDay({ today, outcome, worry: { concern: concern.trim(), nextStep: nextStep.trim() } })
@@ -74,7 +77,7 @@ export function ShutdownScreen({
                   <li key={x.id} className="rounded-xl bg-paper/70 p-2.5 ring-1 ring-line">
                     <p className="flex items-center gap-1.5 text-[15px]">{x.isMain && <Star size={13} className="fill-accent text-accent" />}{x.title}</p>
                     <div className="mt-2 flex flex-wrap gap-1.5">
-                      <Button size="sm" variant="secondary" onClick={() => void completeTask(x.id)}>{t('common.done')}</Button>
+                      <Button size="sm" variant="secondary" onClick={() => void completeTask(x.id).then(() => setLogging(x))}>{t('common.done')}</Button>
                       <Button size="sm" variant="secondary" onClick={() => void scheduleTask(x.id, tomorrow)}>{t('row.tomorrow')}</Button>
                       <Button size="sm" variant="ghost" onClick={() => void scheduleTask(x.id, undefined)}>{t('row.backlog')}</Button>
                       <Button size="sm" variant="danger" onClick={() => void dropTask(x.id, 'dropped at shutdown', today)}>{t('common.drop')}</Button>
@@ -167,6 +170,7 @@ export function ShutdownScreen({
       <Button variant="ghost" onClick={onCancel}>{t('sd.notYet')}</Button>
 
       {editing && <TaskSheet task={editing} today={today} onClose={() => setEditing(null)} />}
+      {logging && <LogTimeModal task={logging} date={today} tracked={trackedOf.get(logging.id) ?? 0} onClose={() => setLogging(null)} />}
       {creating && (
         <Modal onClose={() => setCreating(false)}>
           <TaskForm scheduledFor={tomorrow} heading={t('morn.newMit')} defaultArea={settings.defaultArea} onCreated={() => setCreating(false)} onCancel={() => setCreating(false)} />

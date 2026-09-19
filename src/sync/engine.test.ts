@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { createTask, addParking, deleteParking, completeTask } from '../lib/actions'
+import { createTask, addParking, deleteParking, completeTask, addTimeLog } from '../lib/actions'
 import { applyRemote, db, put } from '../lib/db'
 import { enqueueAll, MemoryCursor, pull, push, syncOnce } from './engine'
 import { MemoryRemote } from './remote'
@@ -7,7 +7,7 @@ import { MemoryRemote } from './remote'
 const base = { title: 'Làm 20 câu S3', dod: [], consequence: '', nextAction: '', scheduledFor: '2026-09-08' }
 
 beforeEach(async () => {
-  await Promise.all([db.goals.clear(), db.tasks.clear(), db.sessions.clear(), db.parking.clear(), db.dayLogs.clear(), db.settings.clear(), db.outbox.clear()])
+  await Promise.all([db.goals.clear(), db.tasks.clear(), db.sessions.clear(), db.parking.clear(), db.dayLogs.clear(), db.settings.clear(), db.timeLogs.clear(), db.outbox.clear()])
 })
 
 describe('outbox', () => {
@@ -33,6 +33,19 @@ describe('outbox', () => {
     const remote = new MemoryRemote()
     await push(remote)
     expect(remote.rows.get(`parking:${p.id}`)!.deleted).toBe(true)
+  })
+})
+
+describe('timeLogs đồng bộ như mọi bảng', () => {
+  it('push lên rồi máy khác pull về đúng dòng', async () => {
+    const t = await createTask(base)
+    const l = (await addTimeLog(t.id, '2026-09-08', 40, 'review'))!
+    const remote = new MemoryRemote()
+    await push(remote)
+    expect(remote.rows.get(`timeLogs:${l.id}`)!.data).toMatchObject({ taskId: t.id, minutes: 40, note: 'review' })
+    await db.timeLogs.clear()
+    expect(await pull(remote, new MemoryCursor())).toBeGreaterThan(0)
+    expect((await db.timeLogs.get(l.id))!.minutes).toBe(40)
   })
 })
 

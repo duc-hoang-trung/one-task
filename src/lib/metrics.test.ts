@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { computeWeekMetrics, focusStreakMin, FORGOT_GRACE_MIN, sessionMinutes } from './metrics'
-import type { DayLog, Session, Task } from './types'
+import { computeWeekMetrics, focusStreakMin, FORGOT_GRACE_MIN, minutesByTask, sessionMinutes } from './metrics'
+import type { DayLog, Session, Task, TimeLog } from './types'
 
 const settings = { minFocusMin: 10, shutdownTime: '21:00', bedtimeTarget: '23:00' }
 const ms = (date: string, h: number, m = 0) => {
@@ -122,5 +122,21 @@ describe('sessionMinutes với tạm dừng', () => {
   })
   it('trần plannedMin + grace vẫn áp', () => {
     expect(sessionMinutes(base, 500 * 60_000)).toBe(25 + FORGOT_GRACE_MIN)
+  })
+})
+
+describe('minutesByTask', () => {
+  it('cộng phút đồng hồ (trừ break) với phút ghi tay, bỏ dòng đã xoá', () => {
+    const s1: Session = { id: 'a', taskId: 't1', date: '2026-09-08', startedAt: 0, endedAt: 25 * 60_000, plannedMin: 25, kind: 'focus' }
+    const br: Session = { id: 'b', taskId: '', date: '2026-09-08', startedAt: 0, endedAt: 5 * 60_000, plannedMin: 5, kind: 'break' }
+    const logs: TimeLog[] = [
+      { id: 'l1', taskId: 't1', date: '2026-09-08', minutes: 30, createdAt: 0 },
+      { id: 'l2', taskId: 't2', date: '2026-09-08', minutes: 15, createdAt: 0 },
+      { id: 'l3', taskId: 't2', date: '2026-09-08', minutes: 99, createdAt: 0, deleted: true },
+    ]
+    const m = minutesByTask([s1, br], logs, 60 * 60_000)
+    expect(m.get('t1')).toBe(55)
+    expect(m.get('t2')).toBe(15)
+    expect(m.has('')).toBe(false)
   })
 })
