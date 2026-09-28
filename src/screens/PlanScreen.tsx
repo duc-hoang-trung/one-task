@@ -5,13 +5,14 @@ import { useT } from '../i18n'
 import type { ISODate } from '../lib/dates'
 import type { Settings, Task } from '../lib/types'
 import { MatrixView } from './plan/MatrixView'
+import { LogView } from './plan/LogView'
 import { MonthView } from './plan/MonthView'
 import { WeekBoard } from './plan/WeekBoard'
 
-type Mode = 'matrix' | 'week' | 'month'
+type Mode = 'matrix' | 'week' | 'month' | 'log'
 const MODE_KEY = 'plan.mode'
 const readMode = (): Mode => {
-  try { const m = sessionStorage.getItem(MODE_KEY); if (m === 'week' || m === 'month') return m } catch { /* ignore */ }
+  try { const m = sessionStorage.getItem(MODE_KEY); if (m === 'week' || m === 'month' || m === 'log') return m } catch { /* ignore */ }
   return 'matrix'
 }
 
@@ -35,10 +36,12 @@ export function PlanScreen({ today, settings, now, onGoToday }: { today: ISODate
         {seg('matrix', t('plan.matrix'))}
         {seg('week', t('plan.week'))}
         {seg('month', t('plan.month'))}
+        {seg('log', t('plan.log'))}
       </div>
       {mode === 'matrix' && <MatrixView today={today} settings={settings} onEdit={setEditing} />}
       {mode === 'week' && <WeekBoard today={today} settings={settings} onEdit={setEditing} />}
       {mode === 'month' && <MonthView today={today} settings={settings} now={now} onGoToday={onGoToday} onEdit={setEditing} />}
+      {mode === 'log' && <LogView today={today} settings={settings} now={now} onEdit={setEditing} />}
       {editing && <TaskSheet task={editing} today={today} onClose={() => setEditing(null)} />}
     </Page>
   )

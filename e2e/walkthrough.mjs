@@ -377,6 +377,15 @@ await ts.getByText('Ôn 30 flashcard').waitFor({ state: 'visible' })
 await ts.getByText('25′', { exact: true }).waitFor({ state: 'visible' })
 await shot('23-month-timesheet')
 
+// 13d. Kế hoạch ▸ Nhật ký: tuần dạng lịch, phiên tập trung là khối đặt đúng giờ
+await page.getByRole('button', { name: 'Nhật ký' }).click()
+const log = page.getByTestId('logview')
+await log.waitFor({ state: 'visible', timeout: 3000 })
+await log.getByRole('button', { name: /Làm 20 câu S3/ }).first().waitFor({ state: 'visible' })   // phiên hôm 08/09
+await log.getByText(/25′ ghi tay/).first().waitFor({ state: 'visible' })                          // giờ ghi tay hôm 10/09
+await log.getByText('✓ Gọi điện cho mẹ').first().waitFor({ state: 'visible' })   // xong mà không có phiên → nằm hàng "Xong"
+await shot('25-plan-log')
+
 // phần còn lại nằm trong Backlog (Ma trận chỉ vẽ Backlog) — trước đây chúng kẹt vĩnh viễn ở ngày 09
 await page.getByRole('button', { name: 'Ma trận' }).click()
 await expectText('Trả lời mail khách')   // 'Đi siêu thị' và 'Hỏi HR' đã bị xoá hàng loạt ở bước trên
