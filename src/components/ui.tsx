@@ -99,7 +99,8 @@ export function Segmented<T extends string>({ value, onChange, options, classNam
 export function Page({ title, subtitle, actions, children, className = '', width = 'wide' }: {
   title?: ReactNode; subtitle?: string; actions?: ReactNode; children: ReactNode; className?: string; width?: 'narrow' | 'wide'
 }) {
-  const w = width === 'narrow' ? 'max-w-md lg:max-w-xl' : 'max-w-md md:max-w-3xl lg:max-w-6xl'
+  // Màn rộng: theo % bề ngang cửa sổ thay vì chặn cứng ở 72rem, để 1440/1920/2560 đều dùng hết chỗ.
+  const w = width === 'narrow' ? 'max-w-md lg:max-w-xl' : 'max-w-md md:max-w-3xl lg:max-w-[94%] 2xl:max-w-[90%]'
   return (
     <div className={`animate-rise mx-auto flex min-h-full w-full ${w} flex-col gap-4 px-5 pb-28 pt-7 lg:px-8 lg:pb-10 ${className}`}>
       {(title || subtitle || actions) && (

@@ -203,7 +203,7 @@ export function TodayScreen({
 
         <Col>
           <Card className="py-4">
-            <TodayBacklog today={today} onEdit={setEditing} onComplete={setLogging} onGoPlan={onGoPlan} />
+            <TodayBacklog today={today} onEdit={setEditing} onGoPlan={onGoPlan} />
           </Card>
         </Col>
       </Columns>

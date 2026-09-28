@@ -143,6 +143,17 @@ export async function deleteTask(taskId: string) {
   await softDelete('tasks', taskId)
 }
 
+/** Xoá nhiều việc một lượt (xoá mềm, vẫn đồng bộ lên cloud). Trả về số việc đã xoá. */
+export async function deleteTasks(ids: string[]): Promise<number> {
+  for (const id of ids) await softDelete('tasks', id)
+  return ids.length
+}
+
+/** Lên lịch nhiều việc về cùng một ngày (hoặc undefined = Backlog). */
+export async function scheduleTasks(ids: string[], to: ISODate | undefined) {
+  for (const id of ids) await scheduleTask(id, to)
+}
+
 /** Cuối ngày: mọi task chưa xong của ngày → mai / backlog. */
 export async function carryOver(date: ISODate, to: ISODate | undefined) {
   const open = (await tasksFor(date)).filter(isOpen)

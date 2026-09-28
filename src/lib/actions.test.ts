@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { db } from './db'
+import { backlogTasks, db, tasksFor } from './db'
 import {
   addGoal, closeDay, closeStaleSessions, createTask, deferTask, endSession, extendSession, openMorning, pauseSession, resumeSession, reconcileSession,
   resolveParking, addParking, startSession, activeSession, startBreak, setMain, scheduleTask, promoteToTask, carryOver, checkinGoal, goalsFor, reorderTasks, completeTask,
-  sweepOverdue, sweptToday, addTimeLog, deleteTimeLog, timeLogsFor, timeLogsOn, updateTask,
+  sweepOverdue, sweptToday, addTimeLog, deleteTimeLog, timeLogsFor, timeLogsOn, updateTask, deleteTasks, scheduleTasks,
 } from './actions'
 import { logicalDate } from './dates'
 
@@ -247,6 +247,25 @@ describe('việc quá hạn', () => {
     await sweepOverdue('2026-09-09')
     const list = await sweptToday(logicalDate(new Date()))
     expect(list.map((x) => x.id)).toEqual([a.id])
+  })
+})
+
+describe('thao tác hàng loạt ở Backlog', () => {
+  it('xoá nhiều việc: xoá mềm nên vẫn đẩy lên cloud, và rời khỏi Backlog', async () => {
+    const a = await createTask({ ...base, scheduledFor: undefined, title: 'A' })
+    const b = await createTask({ ...base, scheduledFor: undefined, title: 'B' })
+    const c = await createTask({ ...base, scheduledFor: undefined, title: 'C' })
+    expect(await deleteTasks([a.id, b.id])).toBe(2)
+    expect((await db.tasks.get(a.id))!.deleted).toBe(true)
+    expect(await db.outbox.get(`tasks:${a.id}`)).toBeTruthy()
+    expect((await backlogTasks()).map((x) => x.id)).toEqual([c.id])
+  })
+  it('đưa nhiều việc vào một ngày một lượt', async () => {
+    const a = await createTask({ ...base, scheduledFor: undefined, title: 'A' })
+    const b = await createTask({ ...base, scheduledFor: undefined, title: 'B' })
+    await scheduleTasks([a.id, b.id], '2026-09-10')
+    expect((await tasksFor('2026-09-10')).map((x) => x.title)).toEqual(['A', 'B'])
+    expect(await backlogTasks()).toEqual([])
   })
 })
 

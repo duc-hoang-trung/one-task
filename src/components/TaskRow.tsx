@@ -16,7 +16,8 @@ import { SubtaskList } from './SubtaskList'
  * Không kéo thả ở đây; bọc ngoài bằng SortableItem / DragItem nếu cần.
  */
 export function TaskRow({
-  task, today, minutes = 0, badge, onFocus, onEdit, onComplete, onToday, showStar = true, compact = false, readOnly = false, dense = false,
+  task, today, minutes = 0, badge, onFocus, onEdit, onComplete, onToday, selected = false, onSelectChange,
+  showStar = true, compact = false, readOnly = false, dense = false,
 }: {
   task: Task
   today: ISODate
@@ -29,6 +30,9 @@ export function TaskRow({
   onComplete?: (task: Task) => void
   /** Hiện nút một chạm đưa việc vào hôm nay (dùng ở Backlog). */
   onToday?: (task: Task) => void
+  /** Có hàm này thì ô vuông đầu dòng là ô CHỌN (để xoá/chuyển hàng loạt), không phải ô đánh xong. */
+  onSelectChange?: (checked: boolean) => void
+  selected?: boolean
   showStar?: boolean
   compact?: boolean
   readOnly?: boolean
@@ -70,14 +74,22 @@ export function TaskRow({
   return (
     <div className={`group relative rounded-xl ${box} ${done ? 'text-ink-3' : ''}`}>
       <div className={`flex items-center ${dense ? 'gap-1.5 px-1.5 py-1.5' : 'gap-2.5 px-2 py-2'}`}>
-        <button
-          aria-label={done ? t('row.undo') : t('common.done')}
-          disabled={readOnly}
-          className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors ${done ? 'border-good bg-good text-white' : 'border-ink-3/60 hover:border-accent'}`}
-          onClick={toggleDone}
-        >
-          {done && <Check size={14} strokeWidth={3} />}
-        </button>
+        {onSelectChange ? (
+          <input
+            type="checkbox" aria-label={task.title} checked={selected} disabled={readOnly}
+            className="h-5 w-5 shrink-0 cursor-pointer rounded accent-accent"
+            onChange={(e) => onSelectChange(e.target.checked)}
+          />
+        ) : (
+          <button
+            aria-label={done ? t('row.undo') : t('common.done')}
+            disabled={readOnly}
+            className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors ${done ? 'border-good bg-good text-white' : 'border-ink-3/60 hover:border-accent'}`}
+            onClick={toggleDone}
+          >
+            {done && <Check size={14} strokeWidth={3} />}
+          </button>
+        )}
 
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="flex min-w-0 items-center gap-2">
@@ -128,6 +140,10 @@ export function TaskRow({
 
       {menu && menuBtn.current && (
         <Popover anchor={menuBtn.current} onClose={closeMenu}>
+            {/* Ở Backlog ô đầu dòng là ô chọn, nên đánh xong nằm trong menu này. */}
+            <MenuItem onClick={() => { setMenu(false); toggleDone() }}>
+              <Check size={14} />{done ? t('row.undo') : t('common.done')}
+            </MenuItem>
             {showStar && task.scheduledFor && !done && (
               <MenuItem onClick={() => void setMain(task.id, !task.isMain).then(() => setMenu(false))}>
                 <Star size={14} />{task.isMain ? t('row.unstar') : t('row.star')}

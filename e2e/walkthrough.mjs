@@ -332,14 +332,19 @@ await tb.getByRole('button', { name: 'Hôm nay', exact: true }).first().click() 
 await page.waitForTimeout(400)
 if (await tb.getByText('Ôn 30 flashcard').isVisible().catch(() => false)) throw new Error('Đưa vào hôm nay mà vẫn nằm trong Backlog')
 await page.locator('li', { hasText: 'Ôn 30 flashcard' }).first().waitFor({ state: 'visible' })
-// tick xong ngay trong Backlog: việc rời Backlog và hộp ghi giờ mở
-const bRow = tb.locator('li', { hasText: 'Đi siêu thị' })
-await bRow.getByLabel('Xong', { exact: true }).click()
-const lt2 = page.getByTestId('logtime')
-await lt2.waitFor({ state: 'visible', timeout: 3000 })
-await lt2.getByRole('button', { name: 'Bỏ qua' }).click()
-await page.waitForTimeout(300)
-if (await tb.getByText('Đi siêu thị').isVisible().catch(() => false)) throw new Error('Đánh xong mà vẫn còn trong Backlog')
+// ô đầu dòng ở Backlog là ô CHỌN: tick 2 việc rồi xoá hàng loạt (có bước xác nhận)
+await tb.getByRole('checkbox', { name: 'Đi siêu thị' }).check()
+await tb.getByRole('checkbox', { name: 'Hỏi HR về bảo hiểm' }).check()
+const bulk = page.getByTestId('backlog-actions')
+await bulk.waitFor({ state: 'visible', timeout: 3000 })
+await expectText('Đã chọn 2')
+await shot('24-backlog-bulk')
+await bulk.getByRole('button', { name: 'Xoá 2' }).click()
+await bulk.getByRole('button', { name: 'Xoá hẳn 2 việc?' }).click()
+await page.waitForTimeout(400)
+for (const gone of ['Đi siêu thị', 'Hỏi HR về bảo hiểm']) {
+  if (await tb.getByText(gone).isVisible().catch(() => false)) throw new Error(`Xoá hàng loạt hụt: ${gone}`)
+}
 
 // 13b. Việc con + ghi giờ trong sheet: thêm 2 việc con, ghi 25′, lưu → dòng hiện 0/2 và 25′; tick một mục → 1/2
 await page.locator('li', { hasText: 'Ôn 30 flashcard' }).first().getByText('Ôn 30 flashcard').click()
@@ -374,7 +379,7 @@ await shot('23-month-timesheet')
 
 // phần còn lại nằm trong Backlog (Ma trận chỉ vẽ Backlog) — trước đây chúng kẹt vĩnh viễn ở ngày 09
 await page.getByRole('button', { name: 'Ma trận' }).click()
-await expectText('Hỏi HR về bảo hiểm')   // 'Đi siêu thị' đã được đánh xong ngay trong Backlog ở bước trên
+await expectText('Trả lời mail khách')   // 'Đi siêu thị' và 'Hỏi HR' đã bị xoá hàng loạt ở bước trên
 
 console.log(errors.length ? `ERRORS:\n${errors.join('\n')}` : 'E2E OK, no console errors')
 await browser.close()
