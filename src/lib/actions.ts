@@ -1,8 +1,9 @@
 import { now } from './clock'
 import { backlogTasks, byOrder, db, getOrCreateDayLog, isOpen, patch, put, softDelete, tasksFor, uid } from './db'
 import { addDays, logicalDate, toHM, toISODate, type HM, type ISODate } from './dates'
+import { celebrate } from './notify'
 import { isFocus, isRunning, type Reconcile } from './session'
-import type { Area, CheckinState, Deferral, DeferralReason, DodItem, Goal, Horizon, ParkingResolution, Quadrant, Session, Task, TimeLog } from './types'
+import { DEFAULT_SETTINGS, type Area, type CheckinState, type Deferral, type DeferralReason, type DodItem, type Goal, type Horizon, type ParkingResolution, type Quadrant, type Session, type Task, type TimeLog } from './types'
 
 // ---- Tasks -------------------------------------------------------------------
 
@@ -104,6 +105,9 @@ export async function completeTask(taskId: string) {
   const t = await db.tasks.get(taskId)
   if (!t) return
   await patch('tasks', taskId, { status: 'done', doneAt: now().getTime(), dod: t.dod.map((d) => ({ ...d, done: true })) })
+  // Báo ngay tại đây để mọi chỗ đánh xong (dòng việc, MIT, Đóng ngày) đều kêu như nhau.
+  const st = await db.settings.get('default')
+  celebrate(st?.notifications ?? DEFAULT_SETTINGS.notifications)
 }
 
 export async function uncompleteTask(taskId: string) {
@@ -218,12 +222,15 @@ export async function startSession(taskId: string, date: ISODate, plannedMin: nu
   return id
 }
 
-/** Nghỉ ngắn: kết thúc phiên đang chạy, mở phiên break. Không tính vào phút tập trung. */
-export async function startBreak(date: ISODate, plannedMin: number, nowMs = now().getTime()) {
+/**
+ * Nghỉ ngắn: kết thúc phiên đang chạy, mở phiên break. Không tính vào phút tập trung.
+ * Nghỉ gắn với việc vừa làm (taskId) để nghỉ xong quay lại đúng việc đó.
+ */
+export async function startBreak(date: ISODate, plannedMin: number, taskId = '', nowMs = now().getTime()) {
   const open = await activeSession()
   if (open) await closeOpenSession(open, nowMs)
   const id = uid()
-  await put('sessions', { id, taskId: '', date, startedAt: nowMs, plannedMin, kind: 'break' })
+  await put('sessions', { id, taskId, date, startedAt: nowMs, plannedMin, kind: 'break' })
   return id
 }
 

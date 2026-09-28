@@ -54,8 +54,9 @@ export function TodayScreen({
   const open = tasks.filter(isOpen)
   const done = tasks.filter((x) => x.status === 'done')
   const due = isShutdownDue(now, settings.shutdownTime)
-  const focusingTask = session && session.kind !== 'break' ? tasks.find((x) => x.id === session.taskId) : undefined
-  const timerOnMit = !!session && (!!mit && (session.taskId === mit.id || session.kind === 'break'))
+  const focusingTask = session ? tasks.find((x) => x.id === session.taskId) : undefined
+  // Nghỉ nay gắn với việc; bản ghi cũ không có taskId thì vẫn hiện ở thẻ MIT như trước.
+  const timerOnMit = !!session && !!mit && (session.taskId === mit.id || (session.kind === 'break' && !session.taskId))
   const canCloseMit = mit ? mit.dod.length === 0 || mit.dod.every((d) => d.done) : false
 
   // MIT đã có card riêng ở trên; không lặp lại trong danh sách
@@ -89,7 +90,7 @@ export function TodayScreen({
           {/* timer đang chạy cho việc không phải MIT */}
           {session && !timerOnMit && (
             <Card>
-              <Eyebrow>{t('today.focusing', { title: focusingTask?.title ?? '' })}</Eyebrow>
+              <Eyebrow>{t(session.kind === 'break' ? 'today.onBreak' : 'today.focusing', { title: focusingTask?.title ?? '' })}</Eyebrow>
               <div className="mt-3">
                 <FocusTimer session={session} settings={settings} streakMin={streak} today={today} taskId={session.taskId || focusingTask?.id || ''} />
               </div>
@@ -209,7 +210,7 @@ export function TodayScreen({
       </Columns>
 
       {editing && <TaskSheet task={editing} today={today} onClose={() => setEditing(null)} />}
-      {logging && <LogTimeModal task={logging} date={today} tracked={trackedOf.get(logging.id) ?? 0} onClose={() => setLogging(null)} />}
+      {logging && <LogTimeModal task={logging} date={today} tracked={trackedOf.get(logging.id) ?? 0} settings={settings} onClose={() => setLogging(null)} />}
       {starting && <StartFocusModal task={starting} today={today} settings={settings} onClose={() => setStarting(null)} />}
       {cancelling && mit && (
         <CancelFlow

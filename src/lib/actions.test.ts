@@ -119,7 +119,7 @@ describe('pause / resume', () => {
     expect((await db.sessions.get(b))!.endedAt).toBe(70_000)
     const c = await startSession(t.id, '2026-09-08', 10, 0)
     await pauseSession(c, 80_000)
-    await startBreak('2026-09-08', 5, 999_000)
+    await startBreak('2026-09-08', 5, '', 999_000)
     expect((await db.sessions.get(c))!.endedAt).toBe(80_000)
     const d = await startSession(t.id, '2026-09-08', 10, 0)
     await pauseSession(d, 90_000)
@@ -127,7 +127,7 @@ describe('pause / resume', () => {
     expect((await db.sessions.get(d))!.endedAt).toBe(90_000)
   })
   it('break không tạm dừng được', async () => {
-    const b = await startBreak('2026-09-08', 5, 0)
+    const b = await startBreak('2026-09-08', 5, '', 0)
     await pauseSession(b, 60_000)
     expect((await db.sessions.get(b))!.pausedAt).toBeUndefined()
   })
@@ -306,11 +306,11 @@ describe('breaks', () => {
   it('startBreak đóng phiên focus và mở phiên break', async () => {
     const t = await createTask(base)
     const f = await startSession(t.id, '2026-09-08', 10, 0)
-    const b = await startBreak('2026-09-08', 5, 25 * 60_000)
+    const b = await startBreak('2026-09-08', 5, t.id, 25 * 60_000)
     expect((await db.sessions.get(f))!.endedAt).toBe(25 * 60_000)
     const br = (await db.sessions.get(b))!
     expect(br.kind).toBe('break')
-    expect(br.taskId).toBe('')
+    expect(br.taskId).toBe(t.id) // nghỉ gắn với việc vừa làm
     expect((await activeSession())!.id).toBe(b)
   })
 })

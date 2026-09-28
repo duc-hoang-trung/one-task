@@ -72,6 +72,12 @@ export function alertUser(prefs: Prefs, title: string, body?: string, kind: 'don
   if (prefs.system) systemNotify(title, body, tag)
 }
 
+/** Đánh xong một việc: âm ngắn + rung nhẹ, không bắn Notification (người dùng đang nhìn màn hình). */
+export function celebrate(prefs: Prefs) {
+  if (prefs.sound) beep('done')
+  if (prefs.vibrate) vibrate(60)
+}
+
 /** Bộ nhớ "đã báo" trong phiên tab, để mỗi sự kiện chỉ báo một lần. */
 const fired = new Set<string>()
 export function once(key: string, fn: () => void) {

@@ -1,9 +1,10 @@
 import { Clock } from 'lucide-react'
 import { useState } from 'react'
 import { useT } from '../i18n'
-import { addTimeLog } from '../lib/actions'
+import { addTimeLog, startBreak } from '../lib/actions'
 import type { ISODate } from '../lib/dates'
-import type { Task } from '../lib/types'
+import type { Settings, Task } from '../lib/types'
+import { BreakChips } from './BreakChips'
 import { Button, Input, Modal, Muted } from './ui'
 
 const PRESETS = [15, 30, 45, 60]
@@ -20,11 +21,13 @@ export function defaultLogMin(task: Pick<Task, 'estimateMin'>, tracked: number):
  * Hộp ghi giờ, mở ngay sau khi đánh xong một việc (việc đã xong rồi; hộp này chỉ để ghi timesheet).
  * Bỏ qua được bằng một chạm; Enter ghi luôn.
  */
-export function LogTimeModal({ task, date, tracked = 0, onClose }: {
+export function LogTimeModal({ task, date, tracked = 0, settings, onClose }: {
   task: Task
   date: ISODate
   /** Phút đồng hồ đã đo cho việc này trong ngày, để gợi ý làm chip đầu. */
   tracked?: number
+  /** Có settings thì hiện mời nghỉ ngay sau khi xong việc. */
+  settings?: Pick<Settings, 'breakMin'>
   onClose: () => void
 }) {
   const { t } = useT()
@@ -33,10 +36,12 @@ export function LogTimeModal({ task, date, tracked = 0, onClose }: {
   const [busy, setBusy] = useState(false)
   const chips = [...new Set([tracked > 0 ? tracked : 0, ...PRESETS])].filter((n) => n > 0)
 
-  async function save() {
-    if (busy || !(min > 0)) return
+  async function save(breakMin?: number) {
+    if (busy) return
     setBusy(true)
-    await addTimeLog(task.id, date, Math.min(MAX_MIN, min), note)
+    if (min > 0) await addTimeLog(task.id, date, Math.min(MAX_MIN, min), note)
+    // Nghỉ gắn với việc vừa xong: xong pomodoro → nghỉ → quay lại đúng việc đó nếu muốn.
+    if (breakMin) await startBreak(date, breakMin, task.id)
     onClose()
   }
 
@@ -71,6 +76,12 @@ export function LogTimeModal({ task, date, tracked = 0, onClose }: {
           <Button type="button" variant="ghost" onClick={onClose}>{t('time.log.skip')}</Button>
           <Button type="submit" className="flex-1" disabled={!(min > 0) || busy}>{t('time.log.save', { n: min })}</Button>
         </div>
+        {settings && (
+          <div className="mt-1 border-t border-line pt-3">
+            <Muted className="mb-1.5 text-center text-[12px]">{t('time.log.break')}</Muted>
+            <BreakChips settings={settings} onPick={(n) => void save(n)} />
+          </div>
+        )}
       </form>
     </Modal>
   )

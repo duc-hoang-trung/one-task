@@ -8,6 +8,7 @@ import { endSession, extendSession, pauseSession, resumeSession, startBreak, sta
 import type { ISODate } from '../lib/dates'
 import { elapsedMs, isFocus, isPaused, isRunning, marks } from '../lib/session'
 import type { Session, Settings } from '../lib/types'
+import { BreakChips } from './BreakChips'
 import { Button, Muted } from './ui'
 
 const pad = (n: number) => String(n).padStart(2, '0')
@@ -60,7 +61,10 @@ export function FocusTimer({
     )
   }, [over, running, elapsed, totalSec, isBreak, session.id, session.plannedMin, settings.notifications, t])
 
-  const resumeAfterBreak = () => void startSession(taskId, today, settings.minFocusMin)
+  // Nghỉ gắn với việc: nghỉ xong quay lại đúng việc đã nghỉ giữa chừng, không nhảy sang việc khác.
+  const ownerId = (isBreak && session.taskId) || taskId
+  const resumeAfterBreak = () => void startSession(ownerId, today, settings.minFocusMin)
+  const takeBreak = (min: number) => void startBreak(today, min, ownerId)
   const stop = () => { marks.clear(); void endSession(session.id) }
 
   return (
@@ -100,11 +104,17 @@ export function FocusTimer({
           <p className="text-center text-ink-2">{suggestBreak ? t('timer.breakHint', { n: streakMin }) : t('timer.overMsg', { n: session.plannedMin })}</p>
           {suggestBreak ? (
             <>
-              <Button size="lg" onClick={() => void startBreak(today, settings.breakMin)}><Coffee size={18} />{t('timer.break', { n: settings.breakMin })}</Button>
+              <Button size="lg" onClick={() => takeBreak(settings.breakMin)}><Coffee size={18} />{t('timer.break', { n: settings.breakMin })}</Button>
+              <Muted className="text-center text-[12px]">{t('timer.breakLen')}</Muted>
+              <BreakChips settings={settings} onPick={takeBreak} />
               <Button variant="secondary" onClick={() => void extendSession(session.id, settings.extendMin)}>{t('timer.extend', { n: settings.extendMin })}</Button>
             </>
           ) : (
-            <Button size="lg" onClick={() => void extendSession(session.id, settings.extendMin)}>{t('timer.extend', { n: settings.extendMin })}</Button>
+            <>
+              <Button size="lg" onClick={() => void extendSession(session.id, settings.extendMin)}>{t('timer.extend', { n: settings.extendMin })}</Button>
+              <Muted className="text-center text-[12px]">{t('timer.breakLen')}</Muted>
+              <BreakChips settings={settings} onPick={takeBreak} />
+            </>
           )}
           <Button variant="ghost" onClick={stop}>{t('timer.stop')}</Button>
         </div>
