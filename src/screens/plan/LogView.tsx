@@ -1,7 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useState } from 'react'
 import { ChevronLeft, ChevronRight, Coffee } from 'lucide-react'
-import { Button, Card, Muted } from '../../components/ui'
+import { Button, Card, Muted, Segmented } from '../../components/ui'
 import { fmtDate, useT } from '../../i18n'
 import { timeLogsOn } from '../../lib/actions'
 import { db } from '../../lib/db'
@@ -10,6 +10,7 @@ import { sessionMinutes } from '../../lib/metrics'
 import { periodLabel, weekKey } from '../../lib/period'
 import { isFocus } from '../../lib/session'
 import type { Session, Settings, Task, TimeLog } from '../../lib/types'
+import { DoneList } from './DoneList'
 
 const HOUR_PX = 44
 const DEFAULT_FROM = 7
@@ -23,6 +24,7 @@ const minOfDay = (ms: number) => { const d = new Date(ms); return d.getHours() *
  */
 export function LogView({ today, now, onEdit }: { today: ISODate; settings: Settings; now: Date; onEdit: (t: Task) => void }) {
   const { t, lang } = useT()
+  const [tab, setTab] = useState<'week' | 'all'>('week')
   const [ws, setWs] = useState(weekStart(today))
   const days = weekDays(ws)
   const nowMs = now.getTime()
@@ -80,8 +82,24 @@ export function LogView({ today, now, onEdit }: { today: ISODate; settings: Sett
 
   const empty = sessions.length === 0 && logs.length === 0 && doneTasks.length === 0
 
+  const tabs = (
+    <Segmented
+      value={tab} onChange={setTab} size="sm" className="self-start"
+      options={[{ value: 'week' as const, label: t('log.tab.week') }, { value: 'all' as const, label: t('log.tab.all') }]}
+    />
+  )
+  if (tab === 'all') {
+    return (
+      <div className="flex flex-col gap-3">
+        {tabs}
+        <DoneList today={today} now={now} onEdit={onEdit} />
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col gap-3">
+      {tabs}
       <div className="flex flex-wrap items-center gap-2">
         <Button variant="ghost" size="sm" aria-label="prev" onClick={() => setWs(addDays(ws, -7))}><ChevronLeft size={16} /></Button>
         <span className="font-display text-lg">{periodLabel(weekKey(ws), lang)}</span>

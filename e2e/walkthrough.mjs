@@ -386,6 +386,20 @@ await log.getByText(/25′ ghi tay/).first().waitFor({ state: 'visible' })      
 await log.getByText('✓ Gọi điện cho mẹ').first().waitFor({ state: 'visible' })   // xong mà không có phiên → nằm hàng "Xong"
 await shot('25-plan-log')
 
+// 13e. Nhật ký ▸ Tất cả: mọi việc đã xong từ trước tới nay, gom theo ngày, tìm được
+await page.getByRole('button', { name: 'Tất cả', exact: true }).click()
+const dl = page.getByTestId('donelist')
+await dl.waitFor({ state: 'visible', timeout: 3000 })
+await dl.getByText('Làm 20 câu S3').first().waitFor({ state: 'visible' })      // xong hôm 08/09
+await dl.getByText('Gọi điện cho mẹ').first().waitFor({ state: 'visible' })    // xong hôm 09/09
+await shot('26-plan-done-all')
+await dl.getByPlaceholder(/Tìm trong việc đã xong/).fill('gọi')
+await page.waitForTimeout(300)
+if (await dl.getByText('Làm 20 câu S3').isVisible().catch(() => false)) throw new Error('Tìm không lọc bớt')
+await dl.getByText('Gọi điện cho mẹ').first().waitFor({ state: 'visible' })
+await dl.getByPlaceholder(/Tìm trong việc đã xong/).fill('')
+await page.getByRole('button', { name: 'Lịch tuần' }).click()
+
 // phần còn lại nằm trong Backlog (Ma trận chỉ vẽ Backlog) — trước đây chúng kẹt vĩnh viễn ở ngày 09
 await page.getByRole('button', { name: 'Ma trận' }).click()
 await expectText('Trả lời mail khách')   // 'Đi siêu thị' và 'Hỏi HR' đã bị xoá hàng loạt ở bước trên
