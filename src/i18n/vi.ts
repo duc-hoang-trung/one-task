@@ -51,6 +51,8 @@ export const vi = {
   'sheet.save': 'Lưu',
   'quick.ph': 'Thêm việc…',
   'quick.hint': '#w công việc · #p cá nhân · !1–!4 ma trận · ~30 phút',
+  'quick.ph.area': 'Thêm vào {area}…',
+  'quick.hint.short': '!1–!4 ma trận · ~30 phút',
   'today.progressBar': '{done}/{total} xong · {min}′ tập trung',
   'today.pickMit': 'Chưa chọn việc quan trọng nhất. Chạm ★ ở một việc.',
   'today.mit': 'Quan trọng nhất hôm nay',

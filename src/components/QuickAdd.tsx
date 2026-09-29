@@ -6,10 +6,22 @@ import type { ISODate } from '../lib/dates'
 import { parseQuickAdd } from '../lib/quickAdd'
 import type { Area, Quadrant } from '../lib/types'
 
-/** Ô thêm nhanh: Enter để tạo. Toggle khu vực; token #w/#p/!n/~m ghi đè. */
+/**
+ * Ô thêm nhanh: Enter để tạo. Token #w/#p/!n/~m luôn ghi đè.
+ * showArea=false: bỏ nút chuyển khu vực và luôn dùng defaultArea — dùng khi ô nằm sẵn
+ * trong một khu vực (mỗi mục Công việc / Cá nhân có ô riêng) nên không cần chọn lại.
+ */
 export function QuickAdd({
-  scheduledFor, defaultArea, quadrant, onCreated, placeholder,
-}: { scheduledFor?: ISODate; defaultArea: Area; quadrant?: Quadrant; onCreated?: (id: string) => void; placeholder?: string }) {
+  scheduledFor, defaultArea, quadrant, onCreated, placeholder, showArea = true, hint = true,
+}: {
+  scheduledFor?: ISODate
+  defaultArea: Area
+  quadrant?: Quadrant
+  onCreated?: (id: string) => void
+  placeholder?: string
+  showArea?: boolean
+  hint?: boolean
+}) {
   const { t } = useT()
   const [text, setText] = useState('')
   const [area, setArea] = useState<Area>(defaultArea)
@@ -17,7 +29,7 @@ export function QuickAdd({
   async function submit() {
     const q = parseQuickAdd(text)
     if (!q.title) return
-    const task = await createTask({ title: q.title, area: q.area ?? area, quadrant: q.quadrant ?? quadrant, estimateMin: q.estimateMin, scheduledFor })
+    const task = await createTask({ title: q.title, area: q.area ?? (showArea ? area : defaultArea), quadrant: q.quadrant ?? quadrant, estimateMin: q.estimateMin, scheduledFor })
     setText('')
     onCreated?.(task.id)
   }
@@ -39,15 +51,17 @@ export function QuickAdd({
           }}
           enterKeyHint="done"
         />
-        <button
-          type="button"
-          className={`shrink-0 rounded-md px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${area === 'work' ? 'bg-ink text-paper' : 'bg-paper-3 text-ink-2'}`}
-          onClick={() => setArea((a) => (a === 'work' ? 'personal' : 'work'))}
-        >
-          {t(`area.${area}`)}
-        </button>
+        {showArea && (
+          <button
+            type="button"
+            className={`shrink-0 rounded-md px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${area === 'work' ? 'bg-ink text-paper' : 'bg-paper-3 text-ink-2'}`}
+            onClick={() => setArea((a) => (a === 'work' ? 'personal' : 'work'))}
+          >
+            {t(`area.${area}`)}
+          </button>
+        )}
       </div>
-      <p className="mt-1 px-1 text-[11px] text-ink-3">{t('quick.hint')}</p>
+      {hint && <p className="mt-1 px-1 text-[11px] text-ink-3">{t(showArea ? 'quick.hint' : 'quick.hint.short')}</p>}
     </div>
   )
 }

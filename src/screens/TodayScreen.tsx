@@ -61,9 +61,9 @@ export function TodayScreen({
 
   // MIT đã có card riêng ở trên; không lặp lại trong danh sách
   const listed = open.filter((x) => x.id !== mit?.id)
+  // Luôn vẽ cả hai khu vực (kể cả khi trống) vì mỗi khu vực có ô thêm việc riêng.
   const groups: { area: Area; items: Task[] }[] = (['work', 'personal'] as Area[])
     .map((area) => ({ area, items: listed.filter((x) => x.area === area) }))
-    .filter((g) => g.items.length > 0)
 
   const progress = tasks.length > 0 && (
     <div>
@@ -167,22 +167,28 @@ export function TodayScreen({
             <Eyebrow className="mb-2">{t('today.list')}</Eyebrow>
             {listed.length === 0 && done.length === 0 && <Muted className="mb-3">{t('today.empty')}</Muted>}
             {groups.map((g) => (
-              <div key={g.area} className="mb-3">
+              <div key={g.area} className="mb-4">
                 <p className="mb-1.5 flex items-baseline gap-2 text-[12px] font-semibold uppercase tracking-wide text-ink-3">
-                  {t(`area.${g.area}`)} <span className="font-normal">{g.items.length}</span>
+                  {t(`area.${g.area}`)} {g.items.length > 0 && <span className="font-normal">{g.items.length}</span>}
                 </p>
-                <SortableList ids={g.items.map((x) => x.id)} onReorder={(ids) => void reorderTasks(ids)}>
-                  <ul className="flex flex-col gap-1.5">
-                    {g.items.map((x) => (
-                      <SortableItem key={x.id} id={x.id}>
-                        <TaskRow task={x} today={today} minutes={minutesOf.get(x.id) ?? 0} onFocus={setStarting} onEdit={setEditing} onComplete={setLogging} />
-                      </SortableItem>
-                    ))}
-                  </ul>
-                </SortableList>
+                {g.items.length > 0 && (
+                  <SortableList ids={g.items.map((x) => x.id)} onReorder={(ids) => void reorderTasks(ids)}>
+                    <ul className="mb-1.5 flex flex-col gap-1.5">
+                      {g.items.map((x) => (
+                        <SortableItem key={x.id} id={x.id}>
+                          <TaskRow task={x} today={today} minutes={minutesOf.get(x.id) ?? 0} onFocus={setStarting} onEdit={setEditing} onComplete={setLogging} />
+                        </SortableItem>
+                      ))}
+                    </ul>
+                  </SortableList>
+                )}
+                <QuickAdd
+                  scheduledFor={today} defaultArea={g.area} showArea={false} hint={false}
+                  placeholder={t('quick.ph.area', { area: t(`area.${g.area}`) })}
+                />
               </div>
             ))}
-            <QuickAdd scheduledFor={today} defaultArea={settings.defaultArea} />
+            <p className="px-1 text-[11px] text-ink-3">{t('quick.hint.short')}</p>
             {done.length > 0 && (
               <div className="mt-3">
                 <button className="flex items-center gap-1 text-[12px] font-semibold uppercase tracking-wide text-ink-3" onClick={() => setShowDone((s) => !s)}>

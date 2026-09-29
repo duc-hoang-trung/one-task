@@ -51,6 +51,8 @@ export const en: Record<Key, string> = {
   'sheet.save': 'Save',
   'quick.ph': 'Add a task…',
   'quick.hint': '#w work · #p personal · !1–!4 matrix · ~30 minutes',
+  'quick.ph.area': 'Add to {area}…',
+  'quick.hint.short': '!1–!4 matrix · ~30 minutes',
   'today.progressBar': '{done}/{total} done · {min}′ focused',
   'today.pickMit': 'No most-important task yet. Tap ★ on one.',
   'today.mit': 'Most important today',
