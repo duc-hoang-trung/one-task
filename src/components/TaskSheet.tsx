@@ -7,7 +7,7 @@ import { now } from '../lib/clock'
 import { db } from '../lib/db'
 import type { ISODate } from '../lib/dates'
 import { sessionMinutes } from '../lib/metrics'
-import { quarterKey, weekKey } from '../lib/period'
+import { monthKey, quarterKey, weekKey } from '../lib/period'
 import { QUADRANTS, type Area, type DodItem, type Quadrant, type Task } from '../lib/types'
 import { SubtaskList } from './SubtaskList'
 import { Button, Eyebrow, Field, Input, Modal, Muted, Select } from './ui'
@@ -28,7 +28,7 @@ export function TaskSheet({ task, today, onClose }: { task: Task; today: ISODate
 
   const refDate = date || today
   const goals = useLiveQuery(
-    async () => [...(await goalsFor(weekKey(refDate))), ...(await goalsFor(quarterKey(refDate)))].filter((g) => g.status === 'open'),
+    async () => (await Promise.all([weekKey(refDate), monthKey(refDate), quarterKey(refDate)].map(goalsFor))).flat().filter((g) => g.status === 'open'),
     [refDate], [],
   )
 

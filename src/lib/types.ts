@@ -12,7 +12,8 @@ export type Quadrant = 'q1' | 'q2' | 'q3' | 'q4'
 export const QUADRANTS: Quadrant[] = ['q1', 'q2', 'q3', 'q4']
 
 export type GoalStatus = 'open' | 'done' | 'dropped'
-export type Horizon = 'week' | 'quarter' | 'year'
+export type Horizon = 'week' | 'month' | 'quarter' | 'year'
+export const HORIZONS: Horizon[] = ['week', 'month', 'quarter', 'year']
 export type CheckinState = 'on-track' | 'behind' | 'blocked'
 export interface Checkin {
   at: number

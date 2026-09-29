@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { computeWeekMetrics, focusStreakMin, FORGOT_GRACE_MIN, minutesByTask, missionStreak, sessionMinutes } from './metrics'
-import type { DayLog, MissionLog, Session, Task, TimeLog } from './types'
+import { computeWeekMetrics, focusStreakMin, FORGOT_GRACE_MIN, goalProgress, minutesByTask, missionStreak, sessionMinutes } from './metrics'
+import type { DayLog, Goal, MissionLog, Session, Task, TimeLog } from './types'
 
 const settings = { minFocusMin: 10, shutdownTime: '21:00', bedtimeTarget: '23:00' }
 const ms = (date: string, h: number, m = 0) => {
@@ -154,5 +154,24 @@ describe('missionStreak', () => {
     const logs = [log('2026-09-07'), log('2026-09-09', false), log('2026-09-10'), log('2026-09-09', true, 'other')]
     expect(missionStreak(logs, 'm', '2026-09-10')).toBe(1)
     expect(missionStreak([], 'm', '2026-09-10')).toBe(0)
+  })
+})
+
+describe('goalProgress', () => {
+  const goal = (id: string): Goal => ({ id, horizon: 'month', periodKey: '2026-09', title: id, area: 'work', status: 'open', checkins: [], createdAt: 0 })
+  const task = (id: string, goalId: string | undefined, status: Task['status'], extra: Partial<Task> = {}): Task => ({
+    id, title: id, area: 'work', order: 0, dod: [], consequence: '', nextAction: '', status, createdAt: 0, deferrals: [], goalId, ...extra,
+  })
+  it('đếm việc gắn vào nhóm mục tiêu, bỏ việc đã xoá và đã bỏ', () => {
+    const tasks = [
+      task('a', 'g1', 'done'), task('b', 'g1', 'planned'),
+      task('c', 'g2', 'done'), task('d', 'g1', 'dropped'),
+      task('e', 'g1', 'done', { deleted: true }),
+      task('f', 'gX', 'done'), task('g', undefined, 'done'),
+    ]
+    expect(goalProgress([goal('g1'), goal('g2')], tasks)).toEqual({ done: 2, total: 3 })
+  })
+  it('chưa gắn việc nào thì total = 0', () => {
+    expect(goalProgress([goal('g1')], [task('a', undefined, 'done')])).toEqual({ done: 0, total: 0 })
   })
 })

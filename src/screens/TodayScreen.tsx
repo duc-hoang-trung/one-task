@@ -1,8 +1,10 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useEffect, useState } from 'react'
-import { Check, ChevronDown, ChevronRight, Moon, Play, Star } from 'lucide-react'
+import { Check, Moon, Play, Star } from 'lucide-react'
 import { CancelFlow } from '../components/CancelFlow'
 import { DailyMissions } from '../components/DailyMissions'
+import { DoneToday } from '../components/DoneToday'
+import { GoalBars } from '../components/GoalBars'
 import { SortableItem, SortableList } from '../components/dnd/SortableList'
 import { FocusTimer } from '../components/FocusTimer'
 import { LogTimeModal } from '../components/LogTimeModal'
@@ -36,7 +38,6 @@ export function TodayScreen({
   const [cancelling, setCancelling] = useState(false)
   const [editing, setEditing] = useState<Task | null>(null)
   const [starting, setStarting] = useState<Task | null>(null)
-  const [showDone, setShowDone] = useState(false)
   const [logging, setLogging] = useState<Task | null>(null)
   // Thời lượng cho nút Bắt đầu của MIT: ước lượng (nếu vừa phải) → lần chọn gần nhất → phút khởi động
   const [mitMin, setMitMin] = useState(() => defaultFocusMin(mit, settings))
@@ -77,6 +78,7 @@ export function TodayScreen({
 
   return (
     <Page subtitle={fmtDate(lang, today)} title={t('today.title')} actions={!due && <Button variant="ghost" size="sm" onClick={onShutdown}><Moon size={14} />{t('today.shutdownEarly')}</Button>}>
+      <GoalBars today={today} />
       {progress}
       <Columns cols="1/1/1">
         <Col className="lg:sticky lg:top-6">
@@ -190,18 +192,7 @@ export function TodayScreen({
               </div>
             ))}
             <p className="px-1 text-[11px] text-ink-3">{t('quick.hint.short')}</p>
-            {done.length > 0 && (
-              <div className="mt-3">
-                <button className="flex items-center gap-1 text-[12px] font-semibold uppercase tracking-wide text-ink-3" onClick={() => setShowDone((s) => !s)}>
-                  {showDone ? <ChevronDown size={14} /> : <ChevronRight size={14} />}{t('today.doneSection', { n: done.length })}
-                </button>
-                {showDone && (
-                  <ul className="mt-1.5 flex flex-col gap-1">
-                    {done.map((x) => <li key={x.id}><TaskRow task={x} today={today} minutes={minutesOf.get(x.id) ?? 0} onEdit={setEditing} compact /></li>)}
-                  </ul>
-                )}
-              </div>
-            )}
+            <DoneToday today={today} minutesOf={minutesOf} onEdit={setEditing} />
           </Card>
 
           <Card className="py-4">

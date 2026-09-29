@@ -199,7 +199,13 @@ await expectText('Nghỉ một lát rồi làm tiếp?')       // mời nghỉ n
 await logtime.getByRole('button', { name: 'Ghi 10′' }).click()
 await page.waitForTimeout(400)
 if (await logtime.isVisible().catch(() => false)) throw new Error('Hộp ghi giờ không đóng sau khi ghi')
-await expectText('Đã xong (1)')
+// "Đã xong" gộp cả việc lẫn nhiệm vụ: 1 việc vừa xong + 1 nhiệm vụ đã tick ở bước trên
+const dt = page.getByTestId('done-today')
+await dt.getByText('Đã xong (2)').click()
+await dt.getByText('Gọi điện cho mẹ').waitFor({ state: 'visible' })
+await dt.getByText('Shadowing').waitFor({ state: 'visible' })
+await dt.getByText('lấy từ Backlog').waitFor({ state: 'visible' }).catch(() => {})
+await shot('29-done-today')
 
 // 10b. ▶ on a secondary task → pick a duration (25′) → timer runs for that task, MIT card stays
 await page.getByLabel('Tập trung', { exact: true }).first().click()
@@ -243,7 +249,7 @@ await page.waitForTimeout(200)
 // MIT card offers duration chips again; "Khác" lets you type any number
 await page.getByRole('button', { name: 'Khác', exact: true }).click()
 await page.getByLabel('phút').fill('12')
-await expectText('Bắt đầu 12 phút')
+await expectText(/(Bắt đầu|Tiếp) 12 phút/)   // MIT đã có phút thì nút là "Tiếp", chưa có thì "Bắt đầu"
 
 // 11. Goals: week goal + quarter goal + check-in + review
 await page.getByRole('button', { name: 'Mục tiêu' }).click()
@@ -261,6 +267,24 @@ await page.getByPlaceholder(/Một dòng/).fill('mới nộp 1')
 await page.getByRole('button', { name: 'Ghi check-in' }).click()
 await expectText('mới nộp 1')
 await shot('12-goals')
+// mục tiêu tháng: chiều mới thêm, phải tạo được và hiện ở thanh tiến độ
+await page.getByPlaceholder('Xong khoá AWS phần 1').fill('Xong khoá AWS phần 1')
+await page.getByPlaceholder('Xong khoá AWS phần 1').press('Enter')
+await page.waitForTimeout(400)
+await page.getByRole('button', { name: 'Hôm nay' }).click()
+const bars = page.getByTestId('goalbars')
+await bars.waitFor({ state: 'visible', timeout: 3000 })
+await bars.getByText('Xong khoá AWS phần 1').waitFor({ state: 'visible' })
+await bars.getByText('Đổi việc trước tháng 12').waitFor({ state: 'visible' })   // mục tiêu năm
+await expectText('chưa gắn việc')
+// gắn một việc vào mục tiêu tuần → thanh tiến độ phải chuyển sang đếm việc
+await page.getByText('Trả lời mail khách').first().click()
+await page.getByRole('dialog').getByLabel('Mục tiêu').selectOption({ label: 'Nộp 2 CV' })
+await page.getByRole('dialog').getByRole('button', { name: 'Lưu' }).click()
+await page.waitForTimeout(400)
+await bars.getByText('0/1').waitFor({ state: 'visible' })
+await shot('28-goal-bars')
+await page.getByRole('button', { name: 'Mục tiêu' }).click()
 
 // 11a. Plan: matrix quick add to backlog, inbox → Q, drag to Today, week board
 await page.getByRole('button', { name: 'Kế hoạch' }).click()

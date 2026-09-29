@@ -309,6 +309,24 @@ export async function timeLogsOn(date: ISODate): Promise<TimeLog[]> {
   return list.filter((l) => !l.deleted)
 }
 
+/** Ngày "đã xong" của một việc: theo lúc đánh xong, không có thì theo ngày đã lên lịch. */
+export function taskDoneOn(t: Task): ISODate | undefined {
+  return t.doneAt ? logicalDate(new Date(t.doneAt)) : t.scheduledFor
+}
+
+/**
+ * Mọi thứ đã hoàn thành trong ngày logic hôm nay: việc (kể cả việc lên lịch ngày khác hoặc
+ * lấy thẳng từ Backlog) và nhiệm vụ hằng ngày đã tick — gộp một chỗ để nhìn lại cuối ngày.
+ */
+export async function doneToday(today: ISODate): Promise<{ tasks: Task[]; missions: Mission[] }> {
+  const all = await db.tasks.where('status').equals('done').filter((t) => !t.deleted).toArray()
+  const tasks = all.filter((t) => taskDoneOn(t) === today).sort((a, b) => (a.doneAt ?? 0) - (b.doneAt ?? 0))
+  const ids = new Set(await missionsDoneOn(today))
+  // Giữ cả nhiệm vụ đã tạm ngưng: hôm nay vẫn tick thì hôm nay vẫn làm.
+  const ms = (await db.missions.toArray()).filter((m) => !m.deleted && ids.has(m.id))
+  return { tasks, missions: ms.sort((a, b) => a.order - b.order) }
+}
+
 // ---- Nhiệm vụ hằng ngày -------------------------------------------------------
 
 export const missionLogId = (date: ISODate, missionId: string) => `${date}:${missionId}`

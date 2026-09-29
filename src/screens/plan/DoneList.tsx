@@ -4,18 +4,14 @@ import { Search } from 'lucide-react'
 import { QuadrantChip } from '../../components/QuadrantChip'
 import { Button, Card, Eyebrow, Input, Muted } from '../../components/ui'
 import { fmtDate, useT } from '../../i18n'
+import { taskDoneOn } from '../../lib/actions'
 import { db } from '../../lib/db'
-import { logicalDate, type ISODate } from '../../lib/dates'
+import type { ISODate } from '../../lib/dates'
 import { minutesByTask } from '../../lib/metrics'
 import type { Area, Task } from '../../lib/types'
 
 const PAGE = 50
 type AreaFilter = Area | 'all'
-
-/** Ngày "đã xong" của một việc: theo lúc đánh xong, không có thì theo ngày đã lên lịch. */
-export function doneOn(t: Task): ISODate | undefined {
-  return t.doneAt ? logicalDate(new Date(t.doneAt)) : t.scheduledFor
-}
 
 /**
  * Toàn bộ việc đã xong, mới nhất trước, gom theo ngày — chỗ để nhìn lại cả quá trình
@@ -35,14 +31,14 @@ export function DoneList({ today, now, onEdit }: { today: ISODate; now: Date; on
   const needle = q.trim().toLowerCase()
   const all = done
     .filter((x) => (area === 'all' || x.area === area) && (!needle || x.title.toLowerCase().includes(needle)))
-    .sort((a, b) => (b.doneAt ?? 0) - (a.doneAt ?? 0) || (doneOn(b) ?? '').localeCompare(doneOn(a) ?? ''))
+    .sort((a, b) => (b.doneAt ?? 0) - (a.doneAt ?? 0) || (taskDoneOn(b) ?? '').localeCompare(taskDoneOn(a) ?? ''))
   const totalMin = all.reduce((sum, x) => sum + (mins.get(x.id) ?? 0), 0)
   const page = all.slice(0, limit)
 
   // gom theo ngày, giữ nguyên thứ tự đã sắp
   const groups: { day: ISODate | 'none'; items: Task[] }[] = []
   for (const x of page) {
-    const day = doneOn(x) ?? 'none'
+    const day = taskDoneOn(x) ?? 'none'
     const last = groups[groups.length - 1]
     if (last && last.day === day) last.items.push(x)
     else groups.push({ day, items: [x] })

@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useT } from '../i18n'
 import { createTask, type NewTaskInput } from '../lib/actions'
 import { goalsFor } from '../lib/actions'
-import { quarterKey, weekKey } from '../lib/period'
+import { monthKey, quarterKey, weekKey } from '../lib/period'
 import type { ISODate } from '../lib/dates'
 import { QUADRANTS, type Area, type Quadrant } from '../lib/types'
 import { checkTitle, MAX_ESTIMATE_MIN } from '../lib/vagueness'
@@ -27,7 +27,7 @@ export function TaskForm({
 }) {
   const { t } = useT()
   const goals = useLiveQuery(
-    async () => [...(await goalsFor(weekKey(scheduledFor))), ...(await goalsFor(quarterKey(scheduledFor)))].filter((g) => g.status === 'open'),
+    async () => (await Promise.all([weekKey(scheduledFor), monthKey(scheduledFor), quarterKey(scheduledFor)].map(goalsFor))).flat().filter((g) => g.status === 'open'),
     [scheduledFor], [],
   )
   const [title, setTitle] = useState('')

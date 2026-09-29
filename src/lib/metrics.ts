@@ -1,7 +1,7 @@
 import { addDays, bedtimeDelta, logicalDate, weekDays, type ISODate } from './dates'
 import { isShutdownOnTime } from './phase'
 import { elapsedMs } from './session'
-import type { DayLog, DeferralReason, MissionLog, Session, Settings, Task, TimeLog } from './types'
+import type { DayLog, DeferralReason, Goal, MissionLog, Session, Settings, Task, TimeLog } from './types'
 
 export interface WeekMetrics {
   weekStart: ISODate
@@ -140,4 +140,17 @@ export function missionStreak(logs: MissionLog[], missionId: string, today: ISOD
     day = addDays(day, -1)
   }
   return n
+}
+
+/** Tiến độ một nhóm mục tiêu: đếm việc đã gắn vào chúng. total = 0 nghĩa là chưa gắn việc nào. */
+export function goalProgress(goals: Goal[], tasks: Task[]): { done: number; total: number } {
+  const ids = new Set(goals.map((g) => g.id))
+  let done = 0
+  let total = 0
+  for (const t of tasks) {
+    if (!t.goalId || !ids.has(t.goalId) || t.deleted || t.status === 'dropped') continue
+    total++
+    if (t.status === 'done') done++
+  }
+  return { done, total }
 }

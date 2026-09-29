@@ -134,7 +134,7 @@ function PeriodSection({ horizon, periodKey, onShift, today, tasks, defaultArea 
         </div>
         {parents.filter((p) => p.status === 'open').length > 0 && (
           <select className="w-full rounded-xl border border-line bg-paper px-3 py-2 text-sm text-ink-2" value={parentId} onChange={(e) => setParentId(e.target.value)}>
-            <option value="">{t('goal.parent.none', { h: t(horizon === 'week' ? 'goal.h.quarter' : 'goal.h.year') })}</option>
+            <option value="">{t('goal.parent.none', { h: t(horizon === 'year' ? 'goal.h.year' : horizon === 'quarter' ? 'goal.h.year' : 'goal.h.quarter') })}</option>
             {parents.filter((p) => p.status === 'open').map((p) => <option key={p.id} value={p.id}>↑ {p.title}</option>)}
           </select>
         )}
@@ -176,12 +176,14 @@ export function GoalsScreen({ today, settings, now }: { today: ISODate; settings
   const [year, setYear] = useState(keyFor('year', today))
   const [quarter, setQuarter] = useState(keyFor('quarter', today))
   const [week, setWeek] = useState(keyFor('week', today))
+  const [month, setMonth] = useState(keyFor('month', today))
   const tasks = useLiveQuery(() => db.tasks.toArray(), [], [])
 
   return (
     <Page title={t('goal.title')} subtitle={t('goal.subtitle')}>
       <Columns cols="1/1/1">
       <PeriodSection horizon="week" periodKey={week} onShift={(b) => setWeek(shiftPeriod(week, b))} today={today} tasks={tasks} defaultArea={settings.defaultArea} />
+      <PeriodSection horizon="month" periodKey={month} onShift={(b) => setMonth(shiftPeriod(month, b))} today={today} tasks={tasks} defaultArea={settings.defaultArea} />
       <PeriodSection horizon="quarter" periodKey={quarter} onShift={(b) => setQuarter(shiftPeriod(quarter, b))} today={today} tasks={tasks} defaultArea={settings.defaultArea} />
       <PeriodSection horizon="year" periodKey={year} onShift={(b) => setYear(shiftPeriod(year, b))} today={today} tasks={tasks} defaultArea={settings.defaultArea} />
       </Columns>
