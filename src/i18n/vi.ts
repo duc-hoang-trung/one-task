@@ -94,6 +94,7 @@ export const vi = {
   'mission.title': 'Nhiệm vụ hằng ngày',
   'mission.empty': 'Việc nhỏ lặp mỗi ngày: Anki, Duolingo, shadowing… Thêm ở dưới.',
   'mission.streak': '{n} ngày liên tiếp',
+  'mission.late': 'quá giờ',
   'mission.add': 'Thêm nhiệm vụ',
   'mission.new': 'Nhiệm vụ hằng ngày mới',
   'mission.new.hint': 'Ví dụ: Sáng · 10 phút · Shadowing. Hoặc 21:00 · 20–25 phút · Anki rồi 1 đề Part 2.',

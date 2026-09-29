@@ -36,7 +36,9 @@ Dòng việc dùng chung cho mọi danh sách: tên một hàng riêng (không b
 - **Night mode**: khoá tới 04:00, chỉ còn ô Parking Lot và tóm tắt ngày mai.
 - **Bỏ qua Đóng ngày**: mở app hôm sau, mọi việc chưa xong của các ngày đã qua tự về **Backlog** (ghi một lần "trôi qua đêm" vào thống kê dời việc), và màn Sáng / Hôm nay hiện một thẻ để đưa từng việc trở lại hôm nay. Không việc nào kẹt lại ở một ngày quá khứ.
 
-Thông báo (âm ngắn, rung, Notification API qua service worker) khi hết giờ hẹn, hết nghỉ, đến giờ đóng ngày, đến giờ bắt đầu một việc. Chỉ khi app đang mở hoặc chạy nền; không có server push.
+Thông báo (âm ngắn, rung, Notification API qua service worker) khi hết giờ hẹn, hết nghỉ, đến giờ đóng ngày, đến giờ bắt đầu một việc, đến giờ một nhiệm vụ hằng ngày. **Chỉ khi app đang mở hoặc còn sống ở nền — chưa có server push.** Mở app muộn hơn mốc giờ tối đa 15 phút thì vẫn nhắc; quá thì nhiệm vụ chỉ hiện nhãn đỏ *quá giờ* trong thẻ Nhiệm vụ hằng ngày.
+
+Cài lên điện thoại: mở URL → "Thêm vào màn hình chính". Icon có bản PNG 180 (iOS) và 192/512 + maskable (Android); iOS không đọc icon SVG nên thiếu PNG là icon thành ảnh chụp trang.
 
 ## Chạy
 

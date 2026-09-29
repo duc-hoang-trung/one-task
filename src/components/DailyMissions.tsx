@@ -7,7 +7,7 @@ import { Button, Eyebrow, Muted } from './ui'
 import { useT } from '../i18n'
 import { missions, missionSlot, missionsDoneOn, setMissionDone } from '../lib/actions'
 import { db } from '../lib/db'
-import type { ISODate } from '../lib/dates'
+import { toHM, type ISODate } from '../lib/dates'
 import { missionStreak } from '../lib/metrics'
 import { MISSION_SLOTS, type Mission } from '../lib/types'
 
@@ -22,7 +22,7 @@ export function missionLength(m: Pick<Mission, 'estimateMin' | 'estimateMaxMin'>
  * Mỗi dòng mang mốc giờ (cố định hoặc buổi), khoảng thời lượng và các bước cụ thể.
  * Tách khỏi danh sách việc trong ngày để không trôi về Backlog mỗi sáng.
  */
-export function DailyMissions({ today }: { today: ISODate }) {
+export function DailyMissions({ today, now }: { today: ISODate; now: Date }) {
   const { t } = useT()
   const [editing, setEditing] = useState<Mission | null>(null)
   const [creating, setCreating] = useState(false)
@@ -31,6 +31,7 @@ export function DailyMissions({ today }: { today: ISODate }) {
   const doneIds = useLiveQuery(() => missionsDoneOn(today), [today], [])
   const logs = useLiveQuery(() => db.missionLogs.filter((l) => !l.deleted).toArray(), [], [])
   const done = new Set(doneIds)
+  const nowHM = toHM(now)
   const groups = MISSION_SLOTS.map((slot) => ({ slot, items: list.filter((m) => missionSlot(m) === slot) })).filter((g) => g.items.length > 0)
 
   return (
@@ -53,6 +54,8 @@ export function DailyMissions({ today }: { today: ISODate }) {
                 const on = done.has(m.id)
                 const streak = missionStreak(logs, m.id, today)
                 const len = missionLength(m)
+                // Có giờ cố định, đã qua giờ mà chưa tick: đánh dấu đỏ — thông báo có thể đã lỡ.
+                const late = !!m.at && !on && nowHM > m.at
                 return (
                   <li key={m.id} className="flex items-start gap-2.5 rounded-lg px-1 py-1">
                     <button
@@ -66,7 +69,8 @@ export function DailyMissions({ today }: { today: ISODate }) {
                       <span className={`block truncate text-[15px] ${on ? 'text-ink-3 line-through' : ''}`}>{m.title}</span>
                       {(m.at || len || m.note) && (
                         <span className="mt-0.5 flex items-center gap-1.5 text-[12px] text-ink-3">
-                          {m.at && <span className="shrink-0 tabular-nums">{m.at}</span>}
+                          {m.at && <span className={`shrink-0 tabular-nums ${late ? 'font-semibold text-bad' : ''}`}>{m.at}</span>}
+                          {late && <span className="shrink-0 text-bad">{t('mission.late')}</span>}
                           {len && <span className="shrink-0 tabular-nums">{len}</span>}
                           {m.note && <span className="min-w-0 truncate">{m.note}</span>}
                         </span>

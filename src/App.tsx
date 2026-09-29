@@ -23,6 +23,8 @@ import { GoalsScreen } from './screens/GoalsScreen'
 
 type View = 'main' | 'plan' | 'week' | 'settings'
 const t0 = (lang: Settings['lang']) => translate(resolveLang(lang), 'app.name')
+/** Mở app muộn hơn mốc giờ bao lâu thì vẫn nhắc. Quá thì chỉ đánh dấu "quá giờ" ở thẻ nhiệm vụ. */
+const MISSION_NUDGE_MIN = 15
 
 export default function App() {
   useEffect(() => initSync(), [])
@@ -76,7 +78,7 @@ function Shell({ settings }: { settings: Settings }) {
     }
     // Nhiệm vụ hằng ngày có giờ cố định ("21:00"): nhắc đúng giờ, trừ khi đã tick xong.
     for (const m of dailyMissions) {
-      if (m.at && isWithinAfter(now, m.at) && !missionsDone.includes(m.id)) {
+      if (m.at && isWithinAfter(now, m.at, MISSION_NUDGE_MIN) && !missionsDone.includes(m.id)) {
         once(`mission:${m.id}:${today}`, () => alertUser(settings.notifications, t('notif.mission', { title: m.title }), m.note || undefined, 'gentle', `mission-${m.id}`))
       }
     }

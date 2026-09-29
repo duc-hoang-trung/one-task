@@ -94,6 +94,7 @@ export const en: Record<Key, string> = {
   'mission.title': 'Daily missions',
   'mission.empty': 'Small things you repeat daily: Anki, Duolingo, shadowing… Add one below.',
   'mission.streak': '{n} days in a row',
+  'mission.late': 'overdue',
   'mission.add': 'Add a mission',
   'mission.new': 'New daily mission',
   'mission.new.hint': 'For example: Morning · 10 min · Shadowing. Or 21:00 · 20–25 min · Anki, then one Part 2 prompt.',

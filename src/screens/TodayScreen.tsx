@@ -211,7 +211,7 @@ export function TodayScreen({
 
         <Col>
           <Card className="py-4">
-            <DailyMissions today={today} />
+            <DailyMissions today={today} now={now} />
           </Card>
           <Card className="py-4">
             <TodayBacklog today={today} onEdit={setEditing} onGoPlan={onGoPlan} />
