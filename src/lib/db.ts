@@ -1,12 +1,12 @@
 import Dexie, { type EntityTable } from 'dexie'
-import type { DayLog, Goal, ParkingItem, Session, Settings, Task, TimeLog } from './types'
+import type { DayLog, Goal, Mission, MissionLog, ParkingItem, Session, Settings, Task, TimeLog } from './types'
 import { weekKey } from './period'
 import { DEFAULT_SETTINGS } from './types'
 import type { ISODate } from './dates'
 import { now } from './clock'
 
-export type SyncTable = 'goals' | 'tasks' | 'sessions' | 'parking' | 'dayLogs' | 'settings' | 'timeLogs'
-export const SYNC_TABLES: SyncTable[] = ['goals', 'tasks', 'sessions', 'parking', 'dayLogs', 'settings', 'timeLogs']
+export type SyncTable = 'goals' | 'tasks' | 'sessions' | 'parking' | 'dayLogs' | 'settings' | 'timeLogs' | 'missions' | 'missionLogs'
+export const SYNC_TABLES: SyncTable[] = ['goals', 'tasks', 'sessions', 'parking', 'dayLogs', 'settings', 'timeLogs', 'missions', 'missionLogs']
 
 /** Hàng chờ đẩy lên cloud. id = `${table}:${rowId}` để ghi nhiều lần chỉ giữ 1 dòng. */
 export interface OutboxRow {
@@ -24,6 +24,8 @@ export class MotViecDB extends Dexie {
   dayLogs!: EntityTable<DayLog, 'date'>
   settings!: EntityTable<Settings, 'id'>
   timeLogs!: EntityTable<TimeLog, 'id'>
+  missions!: EntityTable<Mission, 'id'>
+  missionLogs!: EntityTable<MissionLog, 'id'>
   outbox!: EntityTable<OutboxRow, 'id'>
 
   constructor(name = 'motviec') {
@@ -73,6 +75,8 @@ export class MotViecDB extends Dexie {
       })
     // v5: timesheet ghi tay cho từng việc
     this.version(5).stores({ timeLogs: 'id, taskId, date' })
+    // v6: nhiệm vụ hằng ngày
+    this.version(6).stores({ missions: 'id, order', missionLogs: 'id, date, missionId' })
   }
 }
 
@@ -170,8 +174,9 @@ export const byOrder = (a: Task, b: Task) => (a.order ?? 0) - (b.order ?? 0) || 
 export const notDeleted = <T extends { deleted?: boolean }>(r: T) => !r.deleted
 
 export async function exportAll() {
-  const [goals, tasks, sessions, parking, dayLogs, settings, timeLogs] = await Promise.all([
+  const [goals, tasks, sessions, parking, dayLogs, settings, timeLogs, missions, missionLogs] = await Promise.all([
     db.goals.toArray(), db.tasks.toArray(), db.sessions.toArray(), db.parking.toArray(), db.dayLogs.toArray(), db.settings.toArray(), db.timeLogs.toArray(),
+    db.missions.toArray(), db.missionLogs.toArray(),
   ])
-  return { exportedAt: new Date().toISOString(), goals, tasks, sessions, parking, dayLogs, settings, timeLogs }
+  return { exportedAt: new Date().toISOString(), goals, tasks, sessions, parking, dayLogs, settings, timeLogs, missions, missionLogs }
 }

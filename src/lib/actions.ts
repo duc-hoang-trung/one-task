@@ -3,7 +3,7 @@ import { backlogTasks, byOrder, db, getOrCreateDayLog, isOpen, patch, put, softD
 import { addDays, logicalDate, toHM, toISODate, type HM, type ISODate } from './dates'
 import { celebrate } from './notify'
 import { isFocus, isRunning, type Reconcile } from './session'
-import { DEFAULT_SETTINGS, type Area, type CheckinState, type Deferral, type DeferralReason, type DodItem, type Goal, type Horizon, type ParkingResolution, type Quadrant, type Session, type Task, type TimeLog } from './types'
+import { DEFAULT_SETTINGS, type Area, type CheckinState, type Deferral, type DeferralReason, type DodItem, type Goal, type Horizon, type ParkingResolution, type Quadrant, type Mission, type MissionLog, type Session, type Task, type TimeLog } from './types'
 
 // ---- Tasks -------------------------------------------------------------------
 
@@ -309,6 +309,62 @@ export async function timeLogsOn(date: ISODate): Promise<TimeLog[]> {
   return list.filter((l) => !l.deleted)
 }
 
+// ---- Nhiệm vụ hằng ngày -------------------------------------------------------
+
+export const missionLogId = (date: ISODate, missionId: string) => `${date}:${missionId}`
+
+/** Các nhiệm vụ còn hiệu lực, theo thứ tự. */
+export async function missions(): Promise<Mission[]> {
+  const list = await db.missions.toArray()
+  return list.filter((m) => !m.deleted && m.active).sort((a, b) => a.order - b.order || a.createdAt - b.createdAt)
+}
+
+export async function addMission(title: string, estimateMin?: number): Promise<Mission | undefined> {
+  const name = title.trim()
+  if (!name) return
+  const list = await missions()
+  const m: Mission = {
+    id: uid(),
+    title: name,
+    estimateMin: estimateMin && estimateMin > 0 ? estimateMin : undefined,
+    order: list.length ? Math.max(...list.map((x) => x.order)) + 1 : 0,
+    active: true,
+    createdAt: now().getTime(),
+  }
+  await put('missions', m)
+  return m
+}
+
+export async function updateMission(id: string, changes: Partial<Pick<Mission, 'title' | 'estimateMin' | 'active'>>) {
+  const clean = { ...changes }
+  if (clean.title !== undefined) clean.title = clean.title.trim()
+  await patch('missions', id, clean)
+}
+
+export async function deleteMission(id: string) {
+  await softDelete('missions', id)
+}
+
+export async function reorderMissions(idsInOrder: string[]) {
+  for (let i = 0; i < idsInOrder.length; i++) await patch('missions', idsInOrder[i], { order: i })
+}
+
+/** Tick / bỏ tick một nhiệm vụ cho một ngày. Ghi theo id cố định nên tick lại không đẻ dòng mới. */
+export async function setMissionDone(missionId: string, date: ISODate, done: boolean) {
+  const row: MissionLog = { id: missionLogId(date, missionId), missionId, date, done, at: now().getTime() }
+  await put('missionLogs', row)
+  if (done) {
+    const st = await db.settings.get('default')
+    celebrate(st?.notifications ?? DEFAULT_SETTINGS.notifications)
+  }
+}
+
+/** Các nhiệm vụ đã tick xong trong một ngày (chỉ id). */
+export async function missionsDoneOn(date: ISODate): Promise<string[]> {
+  const list = await db.missionLogs.where('date').equals(date).toArray()
+  return list.filter((l) => !l.deleted && l.done).map((l) => l.missionId)
+}
+
 // ---- Parking lot (inbox ghi nhanh) ------------------------------------------
 
 export async function addParking(text: string, today: ISODate) {
@@ -415,7 +471,7 @@ export async function goalsFor(periodKey: string): Promise<Goal[]> {
 
 export async function wipeAll() {
   await Promise.all([
-    db.goals.clear(), db.tasks.clear(), db.sessions.clear(), db.parking.clear(), db.dayLogs.clear(), db.settings.clear(), db.timeLogs.clear(), db.outbox.clear(),
+    db.goals.clear(), db.tasks.clear(), db.sessions.clear(), db.parking.clear(), db.dayLogs.clear(), db.settings.clear(), db.timeLogs.clear(), db.missions.clear(), db.missionLogs.clear(), db.outbox.clear(),
   ])
 }
 

@@ -4,6 +4,7 @@ import {
   addGoal, closeDay, closeStaleSessions, createTask, deferTask, endSession, extendSession, openMorning, pauseSession, resumeSession, reconcileSession,
   resolveParking, addParking, startSession, activeSession, startBreak, setMain, scheduleTask, promoteToTask, carryOver, checkinGoal, goalsFor, reorderTasks, completeTask,
   sweepOverdue, sweptToday, addTimeLog, deleteTimeLog, timeLogsFor, timeLogsOn, updateTask, deleteTasks, scheduleTasks,
+  addMission, missions, setMissionDone, missionsDoneOn, deleteMission, updateMission, missionLogId,
 } from './actions'
 import { logicalDate } from './dates'
 
@@ -13,7 +14,7 @@ const base = {
 }
 
 beforeEach(async () => {
-  await Promise.all([db.goals.clear(), db.tasks.clear(), db.sessions.clear(), db.parking.clear(), db.dayLogs.clear(), db.timeLogs.clear()])
+  await Promise.all([db.goals.clear(), db.tasks.clear(), db.sessions.clear(), db.parking.clear(), db.dayLogs.clear(), db.timeLogs.clear(), db.missions.clear(), db.missionLogs.clear()])
 })
 
 describe('tasks', () => {
@@ -266,6 +267,39 @@ describe('thao tác hàng loạt ở Backlog', () => {
     await scheduleTasks([a.id, b.id], '2026-09-10')
     expect((await tasksFor('2026-09-10')).map((x) => x.title)).toEqual(['A', 'B'])
     expect(await backlogTasks()).toEqual([])
+  })
+})
+
+describe('nhiệm vụ hằng ngày', () => {
+  it('thêm theo thứ tự, bỏ tên rỗng, giữ số phút', async () => {
+    const a = (await addMission('Học anki'))!
+    await addMission('Ielts speaking', 15)
+    expect(await addMission('   ')).toBeUndefined()
+    const list = await missions()
+    expect(list.map((m) => m.title)).toEqual(['Học anki', 'Ielts speaking'])
+    expect(list[0].order).toBe(0)
+    expect(list[1].estimateMin).toBe(15)
+    expect(a.active).toBe(true)
+  })
+  it('tick theo ngày, tick lại không đẻ dòng mới, bỏ tick thì hết xong', async () => {
+    const m = (await addMission('Duolingo'))!
+    await setMissionDone(m.id, '2026-09-08', true)
+    await setMissionDone(m.id, '2026-09-08', true)
+    expect(await db.missionLogs.count()).toBe(1)
+    expect(await missionsDoneOn('2026-09-08')).toEqual([m.id])
+    expect(await missionsDoneOn('2026-09-09')).toEqual([])
+    await setMissionDone(m.id, '2026-09-08', false)
+    expect(await missionsDoneOn('2026-09-08')).toEqual([])
+    expect(await db.missionLogs.get(missionLogId('2026-09-08', m.id))).toBeTruthy()
+  })
+  it('xoá / tạm ngưng thì rời danh sách nhưng lịch sử tick còn nguyên', async () => {
+    const a = (await addMission('A'))!
+    const b = (await addMission('B'))!
+    await setMissionDone(a.id, '2026-09-08', true)
+    await deleteMission(a.id)
+    await updateMission(b.id, { active: false })
+    expect(await missions()).toEqual([])
+    expect(await missionsDoneOn('2026-09-08')).toEqual([a.id])
   })
 })
 

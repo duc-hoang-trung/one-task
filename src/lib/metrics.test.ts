@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { computeWeekMetrics, focusStreakMin, FORGOT_GRACE_MIN, minutesByTask, sessionMinutes } from './metrics'
-import type { DayLog, Session, Task, TimeLog } from './types'
+import { computeWeekMetrics, focusStreakMin, FORGOT_GRACE_MIN, minutesByTask, missionStreak, sessionMinutes } from './metrics'
+import type { DayLog, MissionLog, Session, Task, TimeLog } from './types'
 
 const settings = { minFocusMin: 10, shutdownTime: '21:00', bedtimeTarget: '23:00' }
 const ms = (date: string, h: number, m = 0) => {
@@ -138,5 +138,21 @@ describe('minutesByTask', () => {
     expect(m.get('t1')).toBe(55)
     expect(m.get('t2')).toBe(15)
     expect(m.has('')).toBe(false)
+  })
+})
+
+describe('missionStreak', () => {
+  const log = (date: string, done = true, missionId = 'm'): MissionLog => ({ id: `${date}:${missionId}`, missionId, date, done, at: 0 })
+  it('đếm ngày liên tiếp lùi từ hôm nay', () => {
+    const logs = [log('2026-09-08'), log('2026-09-09'), log('2026-09-10')]
+    expect(missionStreak(logs, 'm', '2026-09-10')).toBe(3)
+  })
+  it('hôm nay chưa tick vẫn tính chuỗi tới hôm qua', () => {
+    expect(missionStreak([log('2026-09-08'), log('2026-09-09')], 'm', '2026-09-10')).toBe(2)
+  })
+  it('đứt một ngày là chuỗi dừng; bỏ tick và nhiệm vụ khác không tính', () => {
+    const logs = [log('2026-09-07'), log('2026-09-09', false), log('2026-09-10'), log('2026-09-09', true, 'other')]
+    expect(missionStreak(logs, 'm', '2026-09-10')).toBe(1)
+    expect(missionStreak([], 'm', '2026-09-10')).toBe(0)
   })
 })

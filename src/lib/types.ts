@@ -102,6 +102,30 @@ export interface TimeLog extends Synced {
   createdAt: number
 }
 
+/**
+ * Nhiệm vụ hằng ngày: việc nhỏ lặp lại mỗi ngày (Anki, Duolingo, shadowing…).
+ * Không phải Task: không có ngày, không trôi về Backlog, không tính vào "việc xong" của tuần.
+ */
+export interface Mission extends Synced {
+  id: string
+  title: string
+  /** Số phút gợi ý, hiện ở dòng nhiệm vụ. */
+  estimateMin?: number
+  order: number
+  /** Tạm ngưng mà không xoá lịch sử. */
+  active: boolean
+  createdAt: number
+}
+
+/** Một ô tick: nhiệm vụ X của ngày D. id = `${date}:${missionId}` để hai máy tick cùng ra một dòng. */
+export interface MissionLog extends Synced {
+  id: string
+  missionId: string
+  date: ISODate
+  done: boolean
+  at: number
+}
+
 export type ParkingResolution = 'drop' | 'later' | 'tomorrow'
 export interface ParkingItem extends Synced {
   id: string

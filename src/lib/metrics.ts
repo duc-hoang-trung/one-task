@@ -1,7 +1,7 @@
 import { addDays, bedtimeDelta, logicalDate, weekDays, type ISODate } from './dates'
 import { isShutdownOnTime } from './phase'
 import { elapsedMs } from './session'
-import type { DayLog, DeferralReason, Session, Settings, Task, TimeLog } from './types'
+import type { DayLog, DeferralReason, MissionLog, Session, Settings, Task, TimeLog } from './types'
 
 export interface WeekMetrics {
   weekStart: ISODate
@@ -125,4 +125,19 @@ export function computeWeekMetrics(args: {
     tasksDone,
     daysCounted: days.length,
   }
+}
+
+/**
+ * Chuỗi ngày liên tiếp đã tick một nhiệm vụ, tính lùi từ hôm nay.
+ * Hôm nay chưa tick thì vẫn tính chuỗi tới hôm qua (ngày còn dài, chưa gọi là đứt).
+ */
+export function missionStreak(logs: MissionLog[], missionId: string, today: ISODate): number {
+  const done = new Set(logs.filter((l) => !l.deleted && l.done && l.missionId === missionId).map((l) => l.date))
+  let day = done.has(today) ? today : addDays(today, -1)
+  let n = 0
+  while (done.has(day)) {
+    n++
+    day = addDays(day, -1)
+  }
+  return n
 }

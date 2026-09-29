@@ -2,6 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { useEffect, useState } from 'react'
 import { Check, ChevronDown, ChevronRight, Moon, Play, Star } from 'lucide-react'
 import { CancelFlow } from '../components/CancelFlow'
+import { DailyMissions } from '../components/DailyMissions'
 import { SortableItem, SortableList } from '../components/dnd/SortableList'
 import { FocusTimer } from '../components/FocusTimer'
 import { LogTimeModal } from '../components/LogTimeModal'
@@ -209,6 +210,9 @@ export function TodayScreen({
         </Col>
 
         <Col>
+          <Card className="py-4">
+            <DailyMissions today={today} />
+          </Card>
           <Card className="py-4">
             <TodayBacklog today={today} onEdit={setEditing} onGoPlan={onGoPlan} />
           </Card>

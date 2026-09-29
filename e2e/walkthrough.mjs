@@ -155,7 +155,22 @@ await shot('11b-today-list')
 await page.getByTestId('today-backlog').waitFor({ state: 'visible' })
 await expectText('Backlog trống')
 
-// 10a. Đánh xong một việc → hộp ghi giờ mở, mặc định = ước lượng (~10), ghi kèm ghi chú
+// 10a. Nhiệm vụ hằng ngày: việc nhỏ lặp lại, tick theo ngày, không nằm trong danh sách việc
+const miss = page.getByTestId('missions')
+await miss.getByPlaceholder(/Thêm nhiệm vụ/).fill('Học anki')
+await miss.getByPlaceholder(/Thêm nhiệm vụ/).press('Enter')
+await page.waitForTimeout(250)
+await miss.getByPlaceholder(/Thêm nhiệm vụ/).fill('Ielts speaking ~15')
+await miss.getByPlaceholder(/Thêm nhiệm vụ/).press('Enter')
+await page.waitForTimeout(250)
+await miss.getByText('15′').waitFor({ state: 'visible' })
+await miss.getByRole('checkbox', { name: 'Học anki' }).click()
+await page.waitForTimeout(250)
+await expectText('1/2')
+await shot('27-missions')
+if ((await page.getByText('0/4 xong').isVisible().catch(() => false)) === false) throw new Error('Nhiệm vụ lọt vào tiến độ việc trong ngày')
+
+// 10b. Đánh xong một việc → hộp ghi giờ mở, mặc định = ước lượng (~10), ghi kèm ghi chú
 await addMine.fill('Gọi điện cho mẹ ~10')
 await addMine.press('Enter')
 await page.waitForTimeout(300)
@@ -329,6 +344,9 @@ await page.waitForTimeout(300)
 if (await overdue.isVisible().catch(() => false)) throw new Error('Thẻ nhắc không tắt được')
 // 13a. Vào ngày → panel Backlog cạnh danh sách hôm nay hiện các việc vừa trôi, một chạm đưa vào hôm nay
 await page.getByRole('button', { name: 'Vào ngày' }).click()
+// nhiệm vụ hằng ngày sang ngày mới thì trắng lại, nhưng vẫn còn trong danh sách
+await expectText('0/2')
+await page.getByTestId('missions').getByText('Học anki').waitFor({ state: 'visible' })
 const tb = page.getByTestId('today-backlog')
 await tb.waitFor({ state: 'visible', timeout: 3000 })
 await tb.getByText('trôi từ 09/09').first().waitFor({ state: 'visible' })
