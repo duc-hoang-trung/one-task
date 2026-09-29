@@ -2,6 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { useState } from 'react'
 import { Check, Flame, Plus } from 'lucide-react'
 import { MissionSheet } from './MissionSheet'
+import { SlotIcon, slotTone } from './missionSlot'
 import { Button, Eyebrow, Muted } from './ui'
 import { useT } from '../i18n'
 import { missions, missionSlot, missionsDoneOn, setMissionDone } from '../lib/actions'
@@ -44,7 +45,9 @@ export function DailyMissions({ today }: { today: ISODate }) {
       ) : (
         groups.map((g) => (
           <div key={g.slot} className="mb-2.5">
-            <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-ink-3">{t(`mission.slot.${g.slot}`)}</p>
+            <p className={`mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide ${slotTone[g.slot]}`}>
+              <SlotIcon slot={g.slot} size={12} /><span>{t(`mission.slot.${g.slot}`)}</span>
+            </p>
             <ul className="flex flex-col gap-1">
               {g.items.map((m) => {
                 const on = done.has(m.id)

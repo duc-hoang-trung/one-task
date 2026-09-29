@@ -111,7 +111,7 @@ export const en: Record<Key, string> = {
   'mission.note.hint': 'What to do, in order. Optional.',
   'mission.note.ph': 'Anki for 10 minutes, then one Part 2 prompt with 4-3-2 and a recording',
   'mission.slot.morning': 'Morning',
-  'mission.slot.day': 'Daytime',
+  'mission.slot.day': 'Afternoon',
   'mission.slot.evening': 'Evening',
   'notif.mission': 'Time for: {title}',
   'today.backlog.hint': 'Unscheduled tasks. Tap to pull one into today.',

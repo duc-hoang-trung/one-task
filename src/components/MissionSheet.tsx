@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useT } from '../i18n'
 import { addMission, deleteMission, updateMission, type MissionInput } from '../lib/actions'
 import { MISSION_SLOTS, type Mission, type MissionSlot } from '../lib/types'
+import { SlotIcon } from './missionSlot'
 import { Button, Field, Input, Modal, Muted, Segmented, Textarea } from './ui'
 
 /** Thêm / sửa một nhiệm vụ hằng ngày: tên · buổi hoặc giờ cố định · khoảng thời lượng · các bước. */
@@ -41,7 +42,10 @@ export function MissionSheet({ mission, onClose }: { mission?: Mission; onClose:
           <div className="flex flex-wrap items-center gap-2">
             <Segmented
               value={slot} onChange={setSlot} size="sm"
-              options={MISSION_SLOTS.map((s) => ({ value: s, label: t(`mission.slot.${s}`) }))}
+              options={MISSION_SLOTS.map((s) => ({
+                value: s,
+                label: <span className="flex items-center gap-1"><SlotIcon slot={s} size={12} />{t(`mission.slot.${s}`)}</span>,
+              }))}
             />
             <Input type="time" aria-label={t('mission.at')} className="!w-auto !py-1.5 text-sm" value={at} onChange={(e) => setAt(e.target.value)} />
             {at && <Button variant="ghost" size="sm" onClick={() => setAt('')}>{t('mission.at.clear')}</Button>}

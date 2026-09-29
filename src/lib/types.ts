@@ -106,7 +106,10 @@ export interface TimeLog extends Synced {
  * Nhiệm vụ hằng ngày: việc nhỏ lặp lại mỗi ngày (Anki, Duolingo, shadowing…).
  * Không phải Task: không có ngày, không trôi về Backlog, không tính vào "việc xong" của tuần.
  */
-/** Buổi trong ngày, dùng khi nhiệm vụ không có giờ cố định ("Sáng", "Tối"). */
+/**
+ * Buổi trong ngày: sáng (trước 12h) · chiều (12–18h) · tối (từ 18h).
+ * Giá trị 'day' là tên cũ của buổi chiều, giữ nguyên để khỏi phải migrate hàng đã lưu.
+ */
 export type MissionSlot = 'morning' | 'day' | 'evening'
 export const MISSION_SLOTS: MissionSlot[] = ['morning', 'day', 'evening']
 

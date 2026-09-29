@@ -111,7 +111,7 @@ export const vi = {
   'mission.note.hint': 'Làm gì, theo thứ tự nào. Tuỳ chọn.',
   'mission.note.ph': 'Anki 10 phút, rồi 1 đề Part 2 theo 4-3-2 có ghi âm',
   'mission.slot.morning': 'Sáng',
-  'mission.slot.day': 'Trong ngày',
+  'mission.slot.day': 'Chiều',
   'mission.slot.evening': 'Tối',
   'notif.mission': 'Đến giờ: {title}',
   'today.backlog.hint': 'Việc chưa lên lịch. Chạm để đưa vào hôm nay.',
