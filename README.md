@@ -84,6 +84,32 @@ Không cấu hình gì thì app chạy hoàn toàn trong trình duyệt. Muốn 
 
 Local dev: copy `.env.example` → `.env.local` và điền 2 biến. Anon key là public theo thiết kế; dữ liệu được bảo vệ bằng RLS (`auth.uid() = user_id`).
 
+## Nhắc qua thông báo đẩy (Web Push, tuỳ chọn)
+
+Không cấu hình thì app chỉ nhắc khi đang mở (mục Thông báo ở trên). Muốn nhắc cả khi đã đóng app:
+
+1. Sinh khoá: `npx web-push generate-vapid-keys`. Khoá **public** là public theo thiết kế; khoá **private** là bí mật, không bao giờ commit.
+2. GitHub repo → **Settings → Secrets and variables → Actions → Variables**: tạo `VITE_VAPID_PUBLIC_KEY` = khoá public. Chưa đặt thì mục "Nhắc qua thông báo đẩy" trong Cài đặt tự ẩn.
+3. **SQL Editor** → chạy [`supabase/migrations/0002_push.sql`](supabase/migrations/0002_push.sql).
+4. Đặt secret cho Edge Function (khoá private chỉ nằm ở đây):
+   ```bash
+   supabase secrets set VAPID_PUBLIC_KEY=... VAPID_PRIVATE_KEY=... \
+     VAPID_SUBJECT=mailto:ban@example.com PUSH_SHARED_SECRET="$(openssl rand -hex 24)"
+   supabase functions deploy push --no-verify-jwt
+   ```
+5. **Database → Extensions**: bật `pg_cron` và `pg_net`. Rồi hẹn giờ (thay `<ref>` và dán đúng `PUSH_SHARED_SECRET` ở bước 4):
+   ```sql
+   select cron.schedule('push-due', '* * * * *',
+     $$ select public.push_due('https://<ref>.supabase.co/functions/v1/push', '<PUSH_SHARED_SECRET>') $$);
+   ```
+6. Trên điện thoại: **Thêm vào màn hình chính**, mở app từ icon đó, vào Cài đặt → **Bật nhắc đẩy**.
+
+Vì sao không tốn hạn mức: cron mỗi phút chỉ chạy một câu SQL trong Postgres (`due_reminders()`, có index riêng). Không ai tới giờ thì dừng, **không gọi Edge Function**. Có người tới giờ thì gọi **một lần cho tất cả** — với vài nhiệm vụ mỗi ngày là khoảng 150 lần gọi/tháng thay vì 43.000.
+
+Múi giờ: mỗi subscription lưu múi giờ IANA của máy, SQL so `to_char(now() at time zone tz, 'HH24:MI')` nên Postgres tự lo DST. Endpoint chết (gỡ app) bị Edge Function xoá khỏi bảng.
+
+**iOS**: cần iOS 16.4+ **và** phải mở app từ màn hình chính — tab Safari không nhận push, không có cách lách.
+
 Cách sync hoạt động: mọi ghi vào IndexedDB đều đặt `updatedAt` và xếp vào `outbox`; app đẩy outbox lên `records` và kéo về các dòng mới hơn con trỏ của máy, ai ghi sau thắng. Xoá là xoá mềm. Lần đăng nhập đầu trên một máy, toàn bộ dữ liệu local được đẩy lên để hợp nhất với máy khác.
 
 ## Stack

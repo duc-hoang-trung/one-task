@@ -197,6 +197,14 @@ export const vi = {
 
   // account / sync
   'acc.title': 'Tài khoản & đồng bộ',
+  'push.title': 'Nhắc qua thông báo đẩy',
+  'push.why': 'Để app nhắc đúng giờ kể cả khi đã đóng. Cần cài app vào màn hình chính trước.',
+  'push.on': 'Bật nhắc đẩy',
+  'push.off': 'Tắt',
+  'push.state.on': 'Đang bật trên máy này',
+  'push.denied': 'Trình duyệt đã chặn thông báo. Mở cài đặt trang và cho phép lại.',
+  'push.error': 'Không đăng ký được. Thử lại sau, hoặc kiểm tra mạng.',
+  'push.unsupported': 'Máy hoặc trình duyệt này chưa hỗ trợ. Trên iPhone cần iOS 16.4+ và phải mở app từ màn hình chính, không phải tab Safari.',
   'acc.off': 'Chưa cấu hình Supabase. App chạy hoàn toàn trên máy này. Xem README để bật đồng bộ.',
   'acc.email': 'Email',
   'acc.sendLink': 'Gửi link đăng nhập',

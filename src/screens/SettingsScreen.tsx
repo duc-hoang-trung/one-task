@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Button, Card, Col, Columns, Field, Input, Muted, Page, Select } from '../components/ui'
 import { AccountCard } from '../components/AccountCard'
+import { PushCard } from '../components/PushCard'
 import { useT } from '../i18n'
 import { put } from '../lib/db'
 import type { Area, LangSetting, Settings } from '../lib/types'
@@ -94,6 +95,7 @@ export function SettingsScreen({ settings, onboarding = false, onDone }: { setti
       {!onboarding && (
         <Col>
           <AccountCard />
+          <PushCard />
         </Col>
       )}
       </Columns>

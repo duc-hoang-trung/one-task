@@ -341,7 +341,8 @@ await shot('15-plan-month-planned')
 await page.getByRole('button', { name: 'Cài đặt' }).click()
 await expectText('Giờ đóng ngày')
 await expectText('Chưa cấu hình Supabase')
-for (const gone of ['Test / demo', 'Tải bản sao JSON', 'Xoá toàn bộ dữ liệu']) if (await page.getByText(gone).isVisible().catch(() => false)) throw new Error(`Vẫn còn: ${gone}`)
+// chưa cấu hình khoá VAPID thì mục nhắc đẩy phải ẩn hẳn, không hiện nút bấm vào rồi lỗi
+for (const gone of ['Test / demo', 'Tải bản sao JSON', 'Xoá toàn bộ dữ liệu', 'Nhắc qua thông báo đẩy']) if (await page.getByText(gone).isVisible().catch(() => false)) throw new Error(`Vẫn còn: ${gone}`)
 await shot('13-settings')
 
 // 13. Bỏ qua Đóng ngày rồi sang ngày mới: việc chưa xong phải tự về Backlog, không kẹt ở ngày cũ
