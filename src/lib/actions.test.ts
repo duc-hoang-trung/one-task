@@ -4,7 +4,7 @@ import {
   addGoal, closeDay, closeStaleSessions, createTask, deferTask, endSession, extendSession, openMorning, pauseSession, resumeSession, reconcileSession,
   resolveParking, addParking, startSession, activeSession, startBreak, setMain, scheduleTask, promoteToTask, carryOver, checkinGoal, goalsFor, reorderTasks, completeTask,
   sweepOverdue, sweptToday, addTimeLog, deleteTimeLog, timeLogsFor, timeLogsOn, updateTask, deleteTasks, scheduleTasks,
-  addMission, missions, setMissionDone, missionsDoneOn, deleteMission, updateMission, missionLogId,
+  addMission, missions, setMissionDone, missionsDoneOn, deleteMission, updateMission, missionLogId, missionSlot,
 } from './actions'
 import { logicalDate } from './dates'
 
@@ -271,15 +271,29 @@ describe('thao tác hàng loạt ở Backlog', () => {
 })
 
 describe('nhiệm vụ hằng ngày', () => {
-  it('thêm theo thứ tự, bỏ tên rỗng, giữ số phút', async () => {
-    const a = (await addMission('Học anki'))!
-    await addMission('Ielts speaking', 15)
+  it('thêm được với buổi, giờ cố định, khoảng thời lượng và các bước', async () => {
+    const a = (await addMission('Shadowing', { slot: 'morning', estimateMin: 10 }))!
+    const b = (await addMission('Anki + Part 2', { at: '21:00', estimateMin: 20, estimateMaxMin: 25, note: ' Anki 10 phút, rồi 1 đề Part 2 ' }))!
     expect(await addMission('   ')).toBeUndefined()
-    const list = await missions()
-    expect(list.map((m) => m.title)).toEqual(['Học anki', 'Ielts speaking'])
-    expect(list[0].order).toBe(0)
-    expect(list[1].estimateMin).toBe(15)
+    expect(a.estimateMin).toBe(10)
+    expect(a.estimateMaxMin).toBeUndefined()
+    expect(b.estimateMaxMin).toBe(25)
+    expect(b.note).toBe('Anki 10 phút, rồi 1 đề Part 2')
     expect(a.active).toBe(true)
+  })
+  it('khoảng không hợp lệ thì bỏ cận trên; buổi suy từ giờ khi không đặt tay', async () => {
+    const m = (await addMission('X', { estimateMin: 25, estimateMaxMin: 20 }))!
+    expect(m.estimateMaxMin).toBeUndefined()
+    expect(missionSlot({ at: '21:00' })).toBe('evening')
+    expect(missionSlot({ at: '07:30' })).toBe('morning')
+    expect(missionSlot({ at: '13:00' })).toBe('day')
+    expect(missionSlot({ slot: 'morning', at: '21:00' })).toBe('morning') // đặt tay thắng
+  })
+  it('xếp theo buổi rồi tới giờ', async () => {
+    await addMission('Tối muộn', { at: '22:00' })
+    await addMission('Sáng sớm', { at: '06:00' })
+    await addMission('Trưa', { slot: 'day' })
+    expect((await missions()).map((m) => m.title)).toEqual(['Sáng sớm', 'Trưa', 'Tối muộn'])
   })
   it('tick theo ngày, tick lại không đẻ dòng mới, bỏ tick thì hết xong', async () => {
     const m = (await addMission('Duolingo'))!

@@ -106,11 +106,21 @@ export interface TimeLog extends Synced {
  * Nhiệm vụ hằng ngày: việc nhỏ lặp lại mỗi ngày (Anki, Duolingo, shadowing…).
  * Không phải Task: không có ngày, không trôi về Backlog, không tính vào "việc xong" của tuần.
  */
+/** Buổi trong ngày, dùng khi nhiệm vụ không có giờ cố định ("Sáng", "Tối"). */
+export type MissionSlot = 'morning' | 'day' | 'evening'
+export const MISSION_SLOTS: MissionSlot[] = ['morning', 'day', 'evening']
+
 export interface Mission extends Synced {
   id: string
   title: string
-  /** Số phút gợi ý, hiện ở dòng nhiệm vụ. */
+  /** Các bước cụ thể: "Anki 10 phút, rồi 1 đề Part 2 theo 4-3-2 có ghi âm". */
+  note?: string
+  /** Giờ cố định ("21:00") — có giờ thì app nhắc. Không có thì chỉ xếp theo buổi. */
+  at?: HM
+  slot?: MissionSlot
+  /** Thời lượng: một số ("10 phút") hoặc một khoảng cùng estimateMaxMin ("20–25 phút"). */
   estimateMin?: number
+  estimateMaxMin?: number
   order: number
   /** Tạm ngưng mà không xoá lịch sử. */
   active: boolean

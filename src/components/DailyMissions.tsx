@@ -1,95 +1,91 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useState } from 'react'
-import { Check, Flame, Plus, X } from 'lucide-react'
-import { Eyebrow, Muted } from './ui'
+import { Check, Flame, Plus } from 'lucide-react'
+import { MissionSheet } from './MissionSheet'
+import { Button, Eyebrow, Muted } from './ui'
 import { useT } from '../i18n'
-import { addMission, deleteMission, missions, missionsDoneOn, setMissionDone } from '../lib/actions'
+import { missions, missionSlot, missionsDoneOn, setMissionDone } from '../lib/actions'
 import { db } from '../lib/db'
 import type { ISODate } from '../lib/dates'
 import { missionStreak } from '../lib/metrics'
-import { parseQuickAdd } from '../lib/quickAdd'
+import { MISSION_SLOTS, type Mission } from '../lib/types'
+
+/** "10′" hoặc "20–25′" — khoảng chỉ hiện khi có cận trên. */
+export function missionLength(m: Pick<Mission, 'estimateMin' | 'estimateMaxMin'>): string {
+  if (!m.estimateMin) return ''
+  return m.estimateMaxMin ? `${m.estimateMin}–${m.estimateMaxMin}′` : `${m.estimateMin}′`
+}
 
 /**
- * Nhiệm vụ hằng ngày: việc nhỏ lặp mỗi ngày (Anki, Duolingo, shadowing…).
- * Tách khỏi danh sách việc trong ngày để không trôi về Backlog mỗi sáng và không
- * làm loãng "một việc quan trọng nhất". Tick lại mỗi ngày; chuỗi ngày liên tiếp hiện cạnh tên.
+ * Nhiệm vụ hằng ngày: việc nhỏ lặp mỗi ngày, xếp theo buổi (Sáng · Trong ngày · Tối).
+ * Mỗi dòng mang mốc giờ (cố định hoặc buổi), khoảng thời lượng và các bước cụ thể.
+ * Tách khỏi danh sách việc trong ngày để không trôi về Backlog mỗi sáng.
  */
 export function DailyMissions({ today }: { today: ISODate }) {
   const { t } = useT()
-  const [text, setText] = useState('')
-  const [manage, setManage] = useState(false)
+  const [editing, setEditing] = useState<Mission | null>(null)
+  const [creating, setCreating] = useState(false)
 
   const list = useLiveQuery(() => missions(), [], [])
   const doneIds = useLiveQuery(() => missionsDoneOn(today), [today], [])
   const logs = useLiveQuery(() => db.missionLogs.filter((l) => !l.deleted).toArray(), [], [])
   const done = new Set(doneIds)
-
-  async function add() {
-    const q = parseQuickAdd(text)
-    if (!q.title) return
-    await addMission(q.title, q.estimateMin)
-    setText('')
-  }
+  const groups = MISSION_SLOTS.map((slot) => ({ slot, items: list.filter((m) => missionSlot(m) === slot) })).filter((g) => g.items.length > 0)
 
   return (
     <div data-testid="missions">
       <div className="mb-2 flex items-baseline justify-between gap-2">
         <Eyebrow>{t('mission.title')}</Eyebrow>
-        {list.length > 0 && (
-          <span className="flex items-baseline gap-2">
-            <span className="text-[12px] tabular-nums text-ink-3">{done.size}/{list.length}</span>
-            <button className="text-[12px] text-accent hover:underline" onClick={() => setManage((m) => !m)}>
-              {manage ? t('common.done') : t('mission.manage')}
-            </button>
-          </span>
-        )}
+        {list.length > 0 && <span className="text-[12px] tabular-nums text-ink-3">{done.size}/{list.length}</span>}
       </div>
 
       {list.length === 0 ? (
         <Muted className="mb-2 text-[12px]">{t('mission.empty')}</Muted>
       ) : (
-        <ul className="flex flex-col gap-1">
-          {list.map((m) => {
-            const on = done.has(m.id)
-            const streak = missionStreak(logs, m.id, today)
-            return (
-              <li key={m.id} className="flex items-center gap-2.5 rounded-lg px-1 py-1">
-                <button
-                  role="checkbox" aria-checked={on} aria-label={m.title}
-                  className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors ${on ? 'border-good bg-good text-white' : 'border-ink-3/60 hover:border-accent'}`}
-                  onClick={() => void setMissionDone(m.id, today, !on)}
-                >
-                  {on && <Check size={14} strokeWidth={3} />}
-                </button>
-                <span className={`min-w-0 flex-1 truncate text-[15px] ${on ? 'text-ink-3 line-through' : ''}`}>{m.title}</span>
-                {m.estimateMin && <span className="shrink-0 text-[12px] tabular-nums text-ink-3">{m.estimateMin}′</span>}
-                {streak > 1 && (
-                  <span className="flex shrink-0 items-center gap-0.5 text-[12px] tabular-nums text-accent" title={t('mission.streak', { n: streak })}>
-                    <Flame size={12} />{streak}
-                  </span>
-                )}
-                {manage && (
-                  <button aria-label={t('common.delete')} className="shrink-0 rounded p-1 text-ink-3 hover:text-bad" onClick={() => void deleteMission(m.id)}>
-                    <X size={14} />
-                  </button>
-                )}
-              </li>
-            )
-          })}
-        </ul>
+        groups.map((g) => (
+          <div key={g.slot} className="mb-2.5">
+            <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-ink-3">{t(`mission.slot.${g.slot}`)}</p>
+            <ul className="flex flex-col gap-1">
+              {g.items.map((m) => {
+                const on = done.has(m.id)
+                const streak = missionStreak(logs, m.id, today)
+                const len = missionLength(m)
+                return (
+                  <li key={m.id} className="flex items-start gap-2.5 rounded-lg px-1 py-1">
+                    <button
+                      role="checkbox" aria-checked={on} aria-label={m.title}
+                      className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors ${on ? 'border-good bg-good text-white' : 'border-ink-3/60 hover:border-accent'}`}
+                      onClick={() => void setMissionDone(m.id, today, !on)}
+                    >
+                      {on && <Check size={14} strokeWidth={3} />}
+                    </button>
+                    <button className="min-w-0 flex-1 text-left" onClick={() => setEditing(m)}>
+                      <span className={`block truncate text-[15px] ${on ? 'text-ink-3 line-through' : ''}`}>{m.title}</span>
+                      {(m.at || len || m.note) && (
+                        <span className="mt-0.5 flex items-center gap-1.5 text-[12px] text-ink-3">
+                          {m.at && <span className="shrink-0 tabular-nums">{m.at}</span>}
+                          {len && <span className="shrink-0 tabular-nums">{len}</span>}
+                          {m.note && <span className="min-w-0 truncate">{m.note}</span>}
+                        </span>
+                      )}
+                    </button>
+                    {streak > 1 && (
+                      <span className="mt-0.5 flex shrink-0 items-center gap-0.5 text-[12px] tabular-nums text-accent" title={t('mission.streak', { n: streak })}>
+                        <Flame size={12} />{streak}
+                      </span>
+                    )}
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
+        ))
       )}
 
-      <div className="mt-1.5 flex items-center gap-2 rounded-xl border border-line bg-paper px-2 py-1 focus-within:border-accent">
-        <Plus size={15} className="shrink-0 text-ink-3" />
-        <input
-          className="min-w-0 flex-1 bg-transparent py-1.5 text-[14px] placeholder:text-ink-3/70 focus:outline-none"
-          placeholder={t('mission.add.ph')}
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void add() } }}
-          enterKeyHint="done"
-        />
-      </div>
+      <Button variant="ghost" size="sm" className="mt-1 !px-1" onClick={() => setCreating(true)}><Plus size={14} />{t('mission.add')}</Button>
+
+      {creating && <MissionSheet onClose={() => setCreating(false)} />}
+      {editing && <MissionSheet mission={editing} onClose={() => setEditing(null)} />}
     </div>
   )
 }

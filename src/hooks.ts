@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { activeSession, closeStaleSessions, reconcileSession, sweepOverdue } from './lib/actions'
 import { now } from './lib/clock'
 import type { ISODate } from './lib/dates'
+import type { Session } from './lib/types'
 import { decideReconcile, isFocus, isRunning, marks } from './lib/session'
 
 /** Đồng hồ app cho phase và nhắc nhở. Timer KHÔNG dùng hook này (tự tick, xem useTicker). */
@@ -44,8 +45,13 @@ export function useTicker(running: boolean) {
  *  - ẩn / pagehide → ghi mốc vào localStorage (đồng bộ, không chờ IndexedDB)
  *  - hiện lại / khởi động → đối soát: ẩn ngắn thì trừ khoảng ẩn và chạy tiếp, ẩn lâu thì để ở trạng thái tạm dừng
  *  - sau đó mới đóng phiên treo từ ngày khác
+ * `session` là phiên đang mở (đã có sẵn ở màn hình): cần nó để lúc ẩn ghi mốc NGAY, không phải
+ * chờ đọc IndexedDB — trình duyệt có thể treo JS ngay sau visibilitychange, mất mốc là mất cả
+ * khoảng ẩn vào đồng hồ.
  */
-export function useSessionGuard(today: ISODate) {
+export function useSessionGuard(today: ISODate, session?: Session) {
+  const live = useRef(session)
+  live.current = session
   useEffect(() => {
     let cancelled = false
     async function reconcile() {
@@ -55,11 +61,11 @@ export function useSessionGuard(today: ISODate) {
       if (r.kind !== 'none') await reconcileSession(s.id, r)
       marks.clear()
     }
-    async function onHide() {
-      const s = await activeSession()
+    function onHide() {
+      const s = live.current
       if (s && isFocus(s) && isRunning(s)) marks.hidden(s.id, now().getTime())
     }
-    const onVisibility = () => { if (document.hidden) void onHide(); else void reconcile() }
+    const onVisibility = () => { if (document.hidden) onHide(); else void reconcile() }
     void reconcile().then(() => { if (!cancelled) void closeStaleSessions(today) })
     document.addEventListener('visibilitychange', onVisibility)
     window.addEventListener('pagehide', onVisibility)

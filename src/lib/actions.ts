@@ -3,7 +3,7 @@ import { backlogTasks, byOrder, db, getOrCreateDayLog, isOpen, patch, put, softD
 import { addDays, logicalDate, toHM, toISODate, type HM, type ISODate } from './dates'
 import { celebrate } from './notify'
 import { isFocus, isRunning, type Reconcile } from './session'
-import { DEFAULT_SETTINGS, type Area, type CheckinState, type Deferral, type DeferralReason, type DodItem, type Goal, type Horizon, type ParkingResolution, type Quadrant, type Mission, type MissionLog, type Session, type Task, type TimeLog } from './types'
+import { DEFAULT_SETTINGS, MISSION_SLOTS, type Area, type CheckinState, type Deferral, type DeferralReason, type DodItem, type Goal, type Horizon, type ParkingResolution, type Quadrant, type Mission, type MissionLog, type MissionSlot, type Session, type Task, type TimeLog } from './types'
 
 // ---- Tasks -------------------------------------------------------------------
 
@@ -316,17 +316,38 @@ export const missionLogId = (date: ISODate, missionId: string) => `${date}:${mis
 /** Các nhiệm vụ còn hiệu lực, theo thứ tự. */
 export async function missions(): Promise<Mission[]> {
   const list = await db.missions.toArray()
-  return list.filter((m) => !m.deleted && m.active).sort((a, b) => a.order - b.order || a.createdAt - b.createdAt)
+  const rank = (m: Mission) => MISSION_SLOTS.indexOf(missionSlot(m))
+  return list
+    .filter((m) => !m.deleted && m.active)
+    .sort((a, b) => rank(a) - rank(b) || (a.at ?? '99:99').localeCompare(b.at ?? '99:99') || a.order - b.order || a.createdAt - b.createdAt)
 }
 
-export async function addMission(title: string, estimateMin?: number): Promise<Mission | undefined> {
+export type MissionInput = Partial<Pick<Mission, 'note' | 'at' | 'slot' | 'estimateMin' | 'estimateMaxMin'>>
+
+/** Buổi của một nhiệm vụ: lấy theo slot đã đặt, không có thì suy từ giờ cố định. */
+export function missionSlot(m: Pick<Mission, 'slot' | 'at'>): MissionSlot {
+  if (m.slot) return m.slot
+  const h = m.at ? Number(m.at.slice(0, 2)) : 9
+  return h < 12 ? 'morning' : h < 18 ? 'day' : 'evening'
+}
+
+const cleanMission = (i: MissionInput): MissionInput => ({
+  note: i.note?.trim() || undefined,
+  at: i.at || undefined,
+  slot: i.slot,
+  estimateMin: i.estimateMin && i.estimateMin > 0 ? i.estimateMin : undefined,
+  // Khoảng chỉ có nghĩa khi lớn hơn cận dưới: "20–25", không nhận "25–20" hay "20–20".
+  estimateMaxMin: i.estimateMaxMin && i.estimateMin && i.estimateMaxMin > i.estimateMin ? i.estimateMaxMin : undefined,
+})
+
+export async function addMission(title: string, input: MissionInput = {}): Promise<Mission | undefined> {
   const name = title.trim()
   if (!name) return
   const list = await missions()
   const m: Mission = {
     id: uid(),
     title: name,
-    estimateMin: estimateMin && estimateMin > 0 ? estimateMin : undefined,
+    ...cleanMission(input),
     order: list.length ? Math.max(...list.map((x) => x.order)) + 1 : 0,
     active: true,
     createdAt: now().getTime(),
@@ -335,9 +356,11 @@ export async function addMission(title: string, estimateMin?: number): Promise<M
   return m
 }
 
-export async function updateMission(id: string, changes: Partial<Pick<Mission, 'title' | 'estimateMin' | 'active'>>) {
-  const clean = { ...changes }
-  if (clean.title !== undefined) clean.title = clean.title.trim()
+export async function updateMission(id: string, changes: MissionInput & Partial<Pick<Mission, 'title' | 'active'>>) {
+  const { title, active, ...rest } = changes
+  const clean: Partial<Mission> = { ...cleanMission(rest) }
+  if (title !== undefined) clean.title = title.trim()
+  if (active !== undefined) clean.active = active
   await patch('missions', id, clean)
 }
 

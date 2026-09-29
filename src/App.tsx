@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { LayoutGrid, Moon, Settings as SettingsIcon, Sun, Target } from 'lucide-react'
 import { useNow, useOverdueSweep, useSessionGuard } from './hooks'
 import { LangContext, resolveLang, translate, useT } from './i18n'
-import { activeSession } from './lib/actions'
+import { activeSession, missions, missionsDoneOn } from './lib/actions'
 import { isClockOverridden } from './lib/clock'
 import { db, mainTaskFor } from './lib/db'
 import { logicalDate, toHM } from './lib/dates'
@@ -56,11 +56,13 @@ function Shell({ settings }: { settings: Settings }) {
   const task = useLiveQuery(() => mainTaskFor(today), [today])
   const session = useLiveQuery(() => activeSession(), [today])
 
-  useSessionGuard(today)
+  useSessionGuard(today, session)
   useOverdueSweep(today)
 
   // Nhắc: đến giờ đóng ngày (một lần/ngày) và đến giờ bắt đầu một việc (một lần/việc).
   const todayTasks = useLiveQuery(() => tasksFor(today), [today], [])
+  const dailyMissions = useLiveQuery(() => missions(), [], [])
+  const missionsDone = useLiveQuery(() => missionsDoneOn(today), [today], [] as string[])
   useEffect(() => {
     if (!settings.onboarded || todayLog?.locked) return
     // Đồng hồ tick 30s nên so bằng phút có thể lọt: dùng cửa sổ 5 phút sau mốc, `once` chống lặp.
@@ -72,7 +74,13 @@ function Shell({ settings }: { settings: Settings }) {
         once(`start:${x.id}:${today}`, () => alertUser(settings.notifications, t('notif.startAt', { title: x.title }), x.nextAction || undefined, 'gentle', `start-${x.id}`))
       }
     }
-  }, [now, today, todayLog?.locked, settings, todayTasks, t])
+    // Nhiệm vụ hằng ngày có giờ cố định ("21:00"): nhắc đúng giờ, trừ khi đã tick xong.
+    for (const m of dailyMissions) {
+      if (m.at && isWithinAfter(now, m.at) && !missionsDone.includes(m.id)) {
+        once(`mission:${m.id}:${today}`, () => alertUser(settings.notifications, t('notif.mission', { title: m.title }), m.note || undefined, 'gentle', `mission-${m.id}`))
+      }
+    }
+  }, [now, today, todayLog?.locked, settings, todayTasks, dailyMissions, missionsDone, t])
 
   // Đổi ngày logic (04:00) → về màn hình chính, thoát shutdown.
   useEffect(() => {
